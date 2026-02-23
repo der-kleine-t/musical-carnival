@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="de">
 <head>
 <meta charset="UTF-8">
@@ -7,549 +6,765 @@
 <title>Rivstart A1/A2 – Vokabeltrainer</title>
 
 <!-- iOS Web App Meta Tags -->
-
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Schwedisch">
 <meta name="theme-color" content="#f5f0e8">
 
 <!-- App Icon (inline SVG as data URL) -->
-
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23f5f0e8'/><path d='M45 90 L90 45 L135 90 L90 135 Z' fill='%23c8471a'/><circle cx='90' cy='90' r='25' fill='%232a6b4f'/><text x='90' y='100' font-family='sans-serif' font-size='32' font-weight='bold' fill='%23fffdf7' text-anchor='middle'>SV</text></svg>">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23f5f0e8'/><path d='M45 90 L90 45 L135 90 L90 135 Z' fill='%23c8471a'/><circle cx='90' cy='90' r='25' fill='%232a6b4f'/><text x='90' y='100' font-family='sans-serif' font-size='32' font-weight='bold' fill='%23fffdf7' text-anchor='middle'>SV</text></svg>">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Mono:wght@400;500&display=swap');
 
-:root {
-–bg: #f5f0e8;
-–card-bg: #fffdf7;
-–ink: #1a1208;
-–accent: #c8471a;
-–accent2: #2a6b4f;
-–muted: #8a7b6a;
-–border: #d4c9b4;
-–known: #2a6b4f;
-–unknown: #c8471a;
-–skip: #8a7b6a;
-}
-
-/* Dark Mode */
-body.dark-mode {
-–bg: #1a1208;
-–card-bg: #2a2520;
-–ink: #f5f0e8;
-–accent: #ff6b3d;
-–accent2: #4a9d7a;
-–muted: #a89988;
-–border: #3d362c;
-–known: #4a9d7a;
-–unknown: #ff6b3d;
-}
-
-- { margin:0; padding:0; box-sizing:border-box; }
-
-body {
-font-family: ‘DM Mono’, monospace;
-background: var(–bg);
-color: var(–ink);
-min-height: 100vh;
-display: flex;
-flex-direction: column;
-align-items: center;
-}
-
-/* HEADER */
-header {
-width: 100%;
-padding: 20px 30px 16px;
-display: flex;
-align-items: center;
-justify-content: space-between;
-gap: 12px;
-border-bottom: 1px solid var(–border);
-background: var(–bg);
-position: sticky;
-top: 0;
-z-index: 10;
-}
-
-header h1 {
-font-family: ‘Fraunces’, serif;
-font-size: 1.5rem;
-font-weight: 600;
-letter-spacing: -0.02em;
-}
-
-header .subtitle {
-font-size: 0.7rem;
-color: var(–muted);
-letter-spacing: 0.08em;
-text-transform: uppercase;
-}
-
-.theme-toggle {
-width: 36px;
-height: 36px;
-border-radius: 50%;
-border: 1.5px solid var(–border);
-background: var(–card-bg);
-cursor: pointer;
-display: flex;
-align-items: center;
-justify-content: center;
-font-size: 1.2rem;
-transition: all 0.3s ease;
-flex-shrink: 0;
-}
-
-.theme-toggle:hover {
-border-color: var(–accent);
-transform: rotate(20deg) scale(1.1);
-}
-
-.theme-toggle:active {
-transform: rotate(20deg) scale(0.95);
-}
-
-body.dark-mode .theme-toggle .theme-icon::before {
-content: ‘☀️’;
-}
-
-body:not(.dark-mode) .theme-toggle .theme-icon::before {
-content: ‘🌙’;
-}
-
-/* STATS BAR */
-.stats-bar {
-width: 100%;
-max-width: 680px;
-display: flex;
-gap: 8px;
-padding: 14px 20px 0;
-font-size: 0.65rem;
-letter-spacing: 0.06em;
-text-transform: uppercase;
-color: var(–muted);
-}
-
-.stat {
-display: flex;
-align-items: center;
-gap: 5px;
-padding: 4px 10px;
-border: 1px solid var(–border);
-border-radius: 20px;
-background: var(–card-bg);
-}
-
-.stat .dot {
-width: 7px; height: 7px;
-border-radius: 50%;
-}
-.stat.s-total .dot { background: var(–muted); }
-.stat.s-known .dot { background: var(–known); }
-.stat.s-unknown .dot { background: var(–unknown); }
-.stat.s-due { border-color: var(–accent); color: var(–accent); }
-
-/* PROGRESS BAR */
-.progress-wrap {
-width: 100%;
-max-width: 680px;
-padding: 10px 20px 0;
-}
-
-.progress-track {
-width: 100%;
-height: 3px;
-background: var(–border);
-border-radius: 2px;
-overflow: hidden;
-}
-
-.progress-fill {
-height: 100%;
-background: var(–accent2);
-border-radius: 2px;
-transition: width 0.4s ease;
-}
-
-/* MODE SELECTOR */
-.mode-selector {
-width: 100%;
-max-width: 680px;
-padding: 16px 20px 8px;
-display: flex;
-gap: 8px;
-justify-content: center;
-}
-
-.mode-btn {
-font-family: ‘DM Mono’, monospace;
-font-size: 0.65rem;
-padding: 8px 16px;
-border: 1.5px solid var(–border);
-border-radius: 16px;
-background: var(–card-bg);
-color: var(–muted);
-cursor: pointer;
-transition: all 0.2s;
-letter-spacing: 0.06em;
-text-transform: uppercase;
-font-weight: 500;
-}
-
-.mode-btn:hover {
-border-color: var(–accent);
-color: var(–accent);
-transform: translateY(-1px);
-}
-
-.mode-btn.active {
-background: var(–accent);
-color: var(–bg);
-border-color: var(–accent);
-box-shadow: 0 2px 6px rgba(200, 71, 26, 0.3);
-}
-
-/* CHAPTER FILTER */
-.chapter-filter {
-width: 100%;
-max-width: 680px;
-padding: 12px 20px 0;
-display: flex;
-flex-wrap: wrap;
-gap: 6px;
-}
-
-.ch-btn {
-font-family: ‘DM Mono’, monospace;
-font-size: 0.6rem;
-padding: 3px 9px;
-border: 1px solid var(–border);
-border-radius: 12px;
-background: var(–card-bg);
-color: var(–muted);
-cursor: pointer;
-transition: all 0.15s;
-letter-spacing: 0.04em;
-}
-
-.ch-btn:hover { border-color: var(–ink); color: var(–ink); }
-.ch-btn.active { background: var(–ink); color: var(–bg); border-color: var(–ink); }
-
-/* CARD AREA */
-.card-area {
-flex: 1;
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-padding: 30px 20px;
-width: 100%;
-max-width: 680px;
-}
-
-.card-wrap {
-perspective: 1200px;
-width: 100%;
-max-width: 500px;
-height: 280px;
-}
-
-.card {
-width: 100%;
-height: 100%;
-position: relative;
-transform-style: preserve-3d;
-transition: transform 0.5s cubic-bezier(.4,0,.2,1);
-cursor: pointer;
-}
-
-.card.flipped { transform: rotateY(180deg); }
-
-.card-face {
-position: absolute;
-inset: 0;
-backface-visibility: hidden;
-border: 1px solid var(–border);
-border-radius: 4px;
-background: var(–card-bg);
-display: flex;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-padding: 30px;
-box-shadow: 2px 3px 0 var(–border);
-}
-
-.card-back { transform: rotateY(180deg); }
-
-.card-chapter {
-position: absolute;
-top: 12px;
-left: 16px;
-font-size: 0.6rem;
-color: var(–muted);
-letter-spacing: 0.1em;
-text-transform: uppercase;
-}
-
-.card-number {
-position: absolute;
-top: 12px;
-right: 16px;
-font-size: 0.6rem;
-color: var(–muted);
-}
-
-.card-word {
-font-family: ‘Fraunces’, serif;
-font-size: 2.8rem;
-font-weight: 300;
-letter-spacing: -0.03em;
-text-align: center;
-line-height: 1.1;
-}
-
-.card-article {
-font-size: 0.7rem;
-color: var(–muted);
-margin-bottom: 4px;
-letter-spacing: 0.06em;
-}
-
-.card-hint {
-position: absolute;
-bottom: 14px;
-font-size: 0.6rem;
-color: var(–muted);
-letter-spacing: 0.06em;
-}
-
-.card-translation {
-font-family: ‘Fraunces’, serif;
-font-size: 2.2rem;
-font-weight: 300;
-font-style: italic;
-text-align: center;
-letter-spacing: -0.02em;
-line-height: 1.2;
-}
-
-.card-srs-info {
-position: absolute;
-bottom: 14px;
-font-size: 0.6rem;
-letter-spacing: 0.04em;
-}
-
-.srs-level-0 { color: var(–unknown); }
-.srs-level-1 { color: #c88a1a; }
-.srs-level-2 { color: #8a9a2a; }
-.srs-level-3, .srs-level-4, .srs-level-5 { color: var(–known); }
-
-/* ANSWER BUTTONS */
-.answer-btns {
-display: flex;
-gap: 12px;
-margin-top: 22px;
-width: 100%;
-max-width: 500px;
-}
-
-.btn {
-font-family: ‘DM Mono’, monospace;
-font-size: 0.7rem;
-letter-spacing: 0.08em;
-text-transform: uppercase;
-padding: 10px 0;
-flex: 1;
-border: 1px solid var(–border);
-border-radius: 3px;
-background: var(–card-bg);
-cursor: pointer;
-transition: all 0.15s;
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 6px;
-}
-
-.btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
-.btn:active { transform: translateY(0); }
-
-.btn-known {
-border-color: var(–known);
-color: var(–known);
-}
-.btn-known:hover { background: var(–known); color: white; }
-
-.btn-unknown {
-border-color: var(–unknown);
-color: var(–unknown);
-}
-.btn-unknown:hover { background: var(–unknown); color: white; }
-
-.btn-flip {
-border-color: var(–ink);
-color: var(–ink);
-font-size: 0.65rem;
-}
-.btn-flip:hover { background: var(–ink); color: var(–bg); }
-
-/* DONE SCREEN */
-.done-screen {
-display: none;
-flex-direction: column;
-align-items: center;
-justify-content: center;
-gap: 16px;
-padding: 40px 20px;
-text-align: center;
-}
-
-.done-screen h2 {
-font-family: ‘Fraunces’, serif;
-font-size: 2rem;
-font-weight: 300;
-}
-
-.done-screen p {
-color: var(–muted);
-font-size: 0.75rem;
-line-height: 1.7;
-}
-
-.done-screen .btn {
-max-width: 260px;
-padding: 12px 24px;
-}
-
-/* CONTROLS */
-.controls {
-display: flex;
-gap: 8px;
-padding: 0 20px 20px;
-width: 100%;
-max-width: 680px;
-flex-wrap: wrap;
-}
-
-.ctrl-btn {
-font-family: ‘DM Mono’, monospace;
-font-size: 0.6rem;
-letter-spacing: 0.06em;
-text-transform: uppercase;
-padding: 6px 14px;
-border: 1px solid var(–border);
-border-radius: 20px;
-background: var(–card-bg);
-cursor: pointer;
-color: var(–muted);
-transition: all 0.15s;
-}
-
-.ctrl-btn:hover { border-color: var(–ink); color: var(–ink); }
-
-/* SRS QUEUE INDICATOR */
-.queue-info {
-width: 100%;
-max-width: 680px;
-padding: 8px 20px 0;
-font-size: 0.62rem;
-color: var(–muted);
-letter-spacing: 0.04em;
-}
-
-/* RESPONSIVE */
-@media (max-width: 520px) {
-.card-word { font-size: 2rem; }
-.card-wrap { height: 240px; }
-.card-translation { font-size: 1.7rem; }
-}
-
-/* MOBILE OPTIMIZATIONS */
-@media (max-width: 768px) {
-/* Larger touch targets for mobile */
-.btn {
-padding: 14px 0;
-font-size: 0.75rem;
-min-height: 48px;
-}
-
-```
-.ch-btn {
-  padding: 6px 12px;
-  font-size: 0.65rem;
-  min-height: 36px;
-}
-
-/* Better card sizing on mobile */
-.card-wrap {
-  max-width: 100% !important;
-  height: 320px !important;
-}
-
-.card-word {
-  font-size: 2.2rem !important;
-}
-
-.card-translation {
-  font-size: 1.6rem !important;
-}
-
-/* Improve answer button layout */
-.answer-btns {
-  width: 100%;
-  max-width: 100%;
-  gap: 12px;
-}
-
-.answer-btns button {
-  font-size: 0.8rem;
-}
-
-/* Better stats layout on small screens */
-.stats-bar {
-  font-size: 0.6rem;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.stat {
-  padding: 5px 8px;
-}
-```
-
-}
-
-/* iOS Safari specific fixes */
-@supports (-webkit-touch-callout: none) {
-body {
-/* Safe area for notch/home indicator */
-padding-bottom: env(safe-area-inset-bottom);
-}
-
-```
-/* Prevent iOS text size adjustment */
-body {
-  -webkit-text-size-adjust: 100%;
-}
-
-/* Better tap highlights */
-.btn, .ch-btn, .card {
-  -webkit-tap-highlight-color: rgba(200, 71, 26, 0.2);
-}
-
-/* Smooth scrolling */
-* {
-  -webkit-overflow-scrolling: touch;
-}
-```
-
-}
+  :root {
+    --bg: #f5f0e8;
+    --card-bg: #fffdf7;
+    --ink: #1a1208;
+    --accent: #c8471a;
+    --accent2: #2a6b4f;
+    --muted: #8a7b6a;
+    --border: #d4c9b4;
+    --known: #2a6b4f;
+    --unknown: #c8471a;
+    --skip: #8a7b6a;
+  }
+
+  /* Dark Mode */
+  body.dark-mode {
+    --bg: #1a1208;
+    --card-bg: #2a2520;
+    --ink: #f5f0e8;
+    --accent: #ff6b3d;
+    --accent2: #4a9d7a;
+    --muted: #a89988;
+    --border: #3d362c;
+    --known: #4a9d7a;
+    --unknown: #ff6b3d;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'DM Mono', monospace;
+    background: var(--bg);
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* HEADER */
+  header {
+    width: 100%;
+    padding: 20px 30px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  header h1 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  header .subtitle {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .theme-toggle {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--card-bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    transition: all 0.3s ease;
+    flex-shrink: 0;
+  }
+
+  .theme-toggle:hover {
+    border-color: var(--accent);
+    transform: rotate(20deg) scale(1.1);
+  }
+
+  .theme-toggle:active {
+    transform: rotate(20deg) scale(0.95);
+  }
+
+  body.dark-mode .theme-toggle .theme-icon::before {
+    content: '☀️';
+  }
+
+  body:not(.dark-mode) .theme-toggle .theme-icon::before {
+    content: '🌙';
+  }
+
+  .menu-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: var(--card-bg);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    color: var(--accent);
+    font-weight: bold;
+  }
+
+  .menu-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--bg);
+    transform: scale(1.1);
+  }
+
+  .menu-btn:active {
+    transform: scale(0.95);
+  }
+
+  /* CUSTOM VOCAB MODAL */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-overlay.active {
+    display: flex;
+  }
+
+  .modal {
+    background: var(--bg);
+    border-radius: 12px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+  }
+
+  .modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-header h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 1.3rem;
+    color: var(--ink);
+  }
+
+  .modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: var(--border);
+    cursor: pointer;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--muted);
+  }
+
+  .modal-close:hover {
+    background: var(--accent);
+    color: var(--bg);
+  }
+
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .vocab-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .form-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .form-group label {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 500;
+  }
+
+  .form-group input {
+    padding: 10px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--card-bg);
+    color: var(--ink);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .add-vocab-btn {
+    padding: 12px 20px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+  }
+
+  .add-vocab-btn:hover {
+    background: var(--accent2);
+    transform: translateY(-1px);
+  }
+
+  .add-vocab-btn:active {
+    transform: translateY(0);
+  }
+
+  .custom-vocab-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .custom-vocab-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    gap: 12px;
+  }
+
+  .vocab-text {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    font-size: 0.85rem;
+  }
+
+  .vocab-text .sv {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .vocab-text .sep {
+    color: var(--muted);
+  }
+
+  .vocab-text .de {
+    color: var(--muted);
+  }
+
+  .delete-vocab-btn {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  .delete-vocab-btn:hover {
+    background: var(--unknown);
+    border-color: var(--unknown);
+    color: var(--bg);
+  }
+
+  /* STATS BAR */
+  .stats-bar {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    gap: 8px;
+    padding: 14px 20px 0;
+    font-size: 0.65rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--card-bg);
+  }
+
+  .stat .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+  }
+  .stat.s-total .dot { background: var(--muted); }
+  .stat.s-known .dot { background: var(--known); }
+  .stat.s-unknown .dot { background: var(--unknown); }
+  .stat.s-due { border-color: var(--accent); color: var(--accent); }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    width: 100%;
+    max-width: 680px;
+    padding: 10px 20px 0;
+  }
+
+  .progress-track {
+    width: 100%;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent2);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* MODE SELECTOR */
+  .mode-selector {
+    width: 100%;
+    max-width: 680px;
+    padding: 16px 20px 8px;
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+  }
+
+  .mode-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    padding: 8px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    background: var(--card-bg);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .mode-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    transform: translateY(-1px);
+  }
+
+  .mode-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+    box-shadow: 0 2px 6px rgba(200, 71, 26, 0.3);
+  }
+
+  /* CHAPTER FILTER */
+  .chapter-filter {
+    width: 100%;
+    max-width: 680px;
+    padding: 12px 20px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .ch-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    padding: 3px 9px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.04em;
+  }
+
+  .ch-btn:hover { border-color: var(--ink); color: var(--ink); }
+  .ch-btn.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* CARD AREA */
+  .card-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    width: 100%;
+    max-width: 680px;
+  }
+
+  .card-wrap {
+    perspective: 1200px;
+    width: 100%;
+    max-width: 500px;
+    height: 280px;
+  }
+
+  .card {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(.4,0,.2,1);
+    cursor: pointer;
+  }
+
+  .card.flipped { transform: rotateY(180deg); }
+
+  .card-face {
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--card-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+    box-shadow: 2px 3px 0 var(--border);
+  }
+
+  .card-back { transform: rotateY(180deg); }
+
+  .card-chapter {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .card-number {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  .card-word {
+    font-family: 'Fraunces', serif;
+    font-size: 2.8rem;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    text-align: center;
+    line-height: 1.1;
+  }
+
+  .card-article {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-bottom: 4px;
+    letter-spacing: 0.06em;
+  }
+
+  .card-hint {
+    position: absolute;
+    bottom: 14px;
+    font-size: 0.6rem;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  .card-translation {
+    font-family: 'Fraunces', serif;
+    font-size: 2.2rem;
+    font-weight: 300;
+    font-style: italic;
+    text-align: center;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+  }
+
+  .card-srs-info {
+    position: absolute;
+    bottom: 14px;
+    font-size: 0.6rem;
+    letter-spacing: 0.04em;
+  }
+
+  .srs-level-0 { color: var(--unknown); }
+  .srs-level-1 { color: #c88a1a; }
+  .srs-level-2 { color: #8a9a2a; }
+  .srs-level-3, .srs-level-4, .srs-level-5 { color: var(--known); }
+
+  /* ANSWER BUTTONS */
+  .answer-btns {
+    display: flex;
+    gap: 12px;
+    margin-top: 22px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 10px 0;
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+
+  .btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+  .btn:active { transform: translateY(0); }
+
+  .btn-known {
+    border-color: var(--known);
+    color: var(--known);
+  }
+  .btn-known:hover { background: var(--known); color: white; }
+
+  .btn-unknown {
+    border-color: var(--unknown);
+    color: var(--unknown);
+  }
+  .btn-unknown:hover { background: var(--unknown); color: white; }
+
+  .btn-flip {
+    border-color: var(--ink);
+    color: var(--ink);
+    font-size: 0.65rem;
+  }
+  .btn-flip:hover { background: var(--ink); color: var(--bg); }
+
+  /* DONE SCREEN */
+  .done-screen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  .done-screen h2 {
+    font-family: 'Fraunces', serif;
+    font-size: 2rem;
+    font-weight: 300;
+  }
+
+  .done-screen p {
+    color: var(--muted);
+    font-size: 0.75rem;
+    line-height: 1.7;
+  }
+
+  .done-screen .btn {
+    max-width: 260px;
+    padding: 12px 24px;
+  }
+
+  /* CONTROLS */
+  .controls {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px 20px;
+    width: 100%;
+    max-width: 680px;
+    flex-wrap: wrap;
+  }
+
+  .ctrl-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--card-bg);
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+
+  .ctrl-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+  /* SRS QUEUE INDICATOR */
+  .queue-info {
+    width: 100%;
+    max-width: 680px;
+    padding: 8px 20px 0;
+    font-size: 0.62rem;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 520px) {
+    .card-word { font-size: 2rem; }
+    .card-wrap { height: 240px; }
+    .card-translation { font-size: 1.7rem; }
+  }
+
+  /* MOBILE OPTIMIZATIONS */
+  @media (max-width: 768px) {
+    /* Larger touch targets for mobile */
+    .btn {
+      padding: 14px 0;
+      font-size: 0.75rem;
+      min-height: 48px;
+    }
+
+    .ch-btn {
+      padding: 6px 12px;
+      font-size: 0.65rem;
+      min-height: 36px;
+    }
+
+    /* Better card sizing on mobile */
+    .card-wrap {
+      max-width: 100% !important;
+      height: 320px !important;
+    }
+
+    .card-word {
+      font-size: 2.2rem !important;
+    }
+
+    .card-translation {
+      font-size: 1.6rem !important;
+    }
+
+    /* Improve answer button layout */
+    .answer-btns {
+      width: 100%;
+      max-width: 100%;
+      gap: 12px;
+    }
+
+    .answer-btns button {
+      font-size: 0.8rem;
+    }
+
+    /* Better stats layout on small screens */
+    .stats-bar {
+      font-size: 0.6rem;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      padding: 5px 8px;
+    }
+  }
+
+  /* iOS Safari specific fixes */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      /* Safe area for notch/home indicator */
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Prevent iOS text size adjustment */
+    body {
+      -webkit-text-size-adjust: 100%;
+    }
+
+    /* Better tap highlights */
+    .btn, .ch-btn, .card {
+      -webkit-tap-highlight-color: rgba(200, 71, 26, 0.2);
+    }
+
+    /* Smooth scrolling */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
 </style>
-
 </head>
 <body>
 
@@ -558,6 +773,9 @@ body {
     <h1>Rivstart A1/A2</h1>
     <span class="subtitle">Vokabeltrainer · Spaced Repetition</span>
   </div>
+  <button class="menu-btn" onclick="openCustomVocab()" title="Eigene Vokabeln verwalten">
+    ➕
+  </button>
   <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Dunkles Design umschalten">
     <span class="theme-icon"></span>
   </button>
@@ -662,7 +880,7 @@ const RAW = [
   ["frågar","fragt",3],["född","geboren",3],["gillar","mag / findet gut",3],
   ["hungrig","hungrig",3],["hur","wie",3],["en kanelbulle","ein Zimtbrötchen",3],
   ["en kompis","ein Kumpel / Freund",3],["en kväll","ein Abend",3],["lyssnar","hört zu",3],
-  ["lägger sig","legt sich hin / geht schlafen",3],["en middag","Abendessen",3],["en morgon","ein Morgen",3],
+  ["lägger sig","legt sich hin / geht schlafen",3],["en middag","ein Mittagessen / Abendessen",3],["en morgon","ein Morgen",3],
   ["många","viele",3],["ny","neu",3],["när","wenn / wann",3],
   ["ofta","oft",3],["en pensionär","ein Rentner / eine Rentnerin",3],["promenerar","geht spazieren",3],
   ["ringer","ruft an",3],["sedan","dann / seitdem",3],["sjuk","krank",3],
@@ -1103,6 +1321,7 @@ const RAW = [
 const INTERVALS = [1, 2, 3, 5, 8, 13];
 
 const STORAGE_KEY = 'rivstart_srs_v1';
+const CUSTOM_VOCAB_KEY = 'rivstart_custom_vocab';
 
 function loadState() {
   try {
@@ -1119,6 +1338,40 @@ function saveState() {
     console.error('Save failed:', e);
     alert('Warnung: Fortschritt konnte nicht gespeichert werden. Bitte öffnen Sie die Datei über einen lokalen Webserver oder aktivieren Sie localStorage in Ihren Browser-Einstellungen.');
   }
+}
+
+// ─── CUSTOM VOCAB ─────────────────────────────────────────────────────────────
+function loadCustomVocab() {
+  try {
+    const data = localStorage.getItem(CUSTOM_VOCAB_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch { return []; }
+}
+
+function saveCustomVocab(vocab) {
+  try {
+    localStorage.setItem(CUSTOM_VOCAB_KEY, JSON.stringify(vocab));
+  } catch(e) {
+    console.error('Failed to save custom vocab:', e);
+  }
+}
+
+function getCustomVocabChapter() {
+  // Custom vocab gets chapter number 21+
+  return 21;
+}
+
+function rebuildAllCards() {
+  // Rebuild allCards from RAW + custom vocab
+  const baseCards = RAW.map((r, i) => ({ id: i, sv: r[0], de: r[1], chapter: r[2] }));
+  const customVocab = loadCustomVocab();
+  const customCards = customVocab.map((v, i) => ({
+    id: RAW.length + i,
+    sv: v.sv,
+    de: v.de,
+    chapter: getCustomVocabChapter()
+  }));
+  allCards = [...baseCards, ...customCards];
 }
 
 let srsState = loadState();
@@ -1358,7 +1611,9 @@ function buildChapterFilter() {
   allBtn.textContent = 'Alle';
   allBtn.id = 'chAll';
   allBtn.onclick = () => {
-    activeChapters = new Set(Array.from({length: 20}, (_, i) => i + 1));
+    const chapters = Array.from({length: 20}, (_, i) => i + 1);
+    if (loadCustomVocab().length > 0) chapters.push(getCustomVocabChapter());
+    activeChapters = new Set(chapters);
     document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
     allBtn.classList.add('active');
     restart();
@@ -1379,6 +1634,24 @@ function buildChapterFilter() {
       restart();
     };
     cf.appendChild(btn);
+  }
+  
+  // Add custom vocab button if there are custom vocabs
+  const customVocab = loadCustomVocab();
+  if (customVocab.length > 0) {
+    const customBtn = document.createElement('button');
+    customBtn.className = 'ch-btn';
+    customBtn.textContent = '★ Eigene (' + customVocab.length + ')';
+    customBtn.dataset.ch = getCustomVocabChapter();
+    customBtn.style.borderColor = 'var(--accent)';
+    customBtn.onclick = function() {
+      const ch = getCustomVocabChapter();
+      activeChapters = new Set([ch]);
+      document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      restart();
+    };
+    cf.appendChild(customBtn);
   }
 }
 
@@ -1425,6 +1698,86 @@ function resetAll() {
   saveState();
   restart();
 }
+
+// ─── CUSTOM VOCAB MODAL ───────────────────────────────────────────────────────
+function openCustomVocab() {
+  document.getElementById('customVocabModal').classList.add('active');
+  renderCustomVocabList();
+}
+
+function closeCustomVocab() {
+  document.getElementById('customVocabModal').classList.remove('active');
+}
+
+function addCustomVocab(event) {
+  event.preventDefault();
+  
+  const svInput = document.getElementById('customSv');
+  const deInput = document.getElementById('customDe');
+  
+  const sv = svInput.value.trim();
+  const de = deInput.value.trim();
+  
+  if (!sv || !de) return;
+  
+  const customVocab = loadCustomVocab();
+  customVocab.push({ sv, de });
+  saveCustomVocab(customVocab);
+  
+  // Clear inputs
+  svInput.value = '';
+  deInput.value = '';
+  svInput.focus();
+  
+  // Rebuild cards and update UI
+  rebuildAllCards();
+  renderCustomVocabList();
+  buildChapterFilter();
+  updateStats();
+}
+
+function deleteCustomVocab(index) {
+  if (!confirm('Diese Vokabel wirklich löschen?')) return;
+  
+  const customVocab = loadCustomVocab();
+  customVocab.splice(index, 1);
+  saveCustomVocab(customVocab);
+  
+  // Rebuild cards and update UI
+  rebuildAllCards();
+  renderCustomVocabList();
+  buildChapterFilter();
+  updateStats();
+}
+
+function renderCustomVocabList() {
+  const list = document.getElementById('customVocabList');
+  const customVocab = loadCustomVocab();
+  
+  if (customVocab.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted); text-align:center; padding:40px 20px; font-size:0.85rem;">Noch keine eigenen Vokabeln hinzugefügt.<br>Nutze das Formular oben!</p>';
+    return;
+  }
+  
+  list.innerHTML = customVocab.map((v, i) => `
+    <div class="custom-vocab-item">
+      <div class="vocab-text">
+        <span class="sv">${v.sv}</span>
+        <span class="sep">→</span>
+        <span class="de">${v.de}</span>
+      </div>
+      <button class="delete-vocab-btn" onclick="deleteCustomVocab(${i})" title="Löschen">✕</button>
+    </div>
+  `).join('');
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', (e) => {
+  const modal = document.getElementById('customVocabModal');
+  if (e.target === modal) {
+    closeCustomVocab();
+  }
+});
 
 // ─── THEME TOGGLE ─────────────────────────────────────────────────────────────
 function toggleTheme() {
@@ -1489,11 +1842,39 @@ document.body.addEventListener('touchmove', function(e) {
   }
 }, { passive: false });
 
+rebuildAllCards(); // Load custom vocab into allCards
 loadTheme();
 buildModeSelector();
 buildChapterFilter();
 restart();
 </script>
+
+<!-- Custom Vocab Modal -->
+<div class="modal-overlay" id="customVocabModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>Eigene Vokabeln</h2>
+      <button class="modal-close" onclick="closeCustomVocab()">✕</button>
+    </div>
+    <div class="modal-body">
+      <form class="vocab-form" onsubmit="addCustomVocab(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="customSv">Schwedisch</label>
+            <input type="text" id="customSv" placeholder="z.B. en katt" required>
+          </div>
+          <div class="form-group">
+            <label for="customDe">Deutsch</label>
+            <input type="text" id="customDe" placeholder="z.B. eine Katze" required>
+          </div>
+        </div>
+        <button type="submit" class="add-vocab-btn">+ Vokabel hinzufügen</button>
+      </form>
+      
+      <div class="custom-vocab-list" id="customVocabList"></div>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
