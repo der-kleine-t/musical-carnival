@@ -33,6 +33,19 @@
 –skip: #8a7b6a;
 }
 
+/* Dark Mode */
+body.dark-mode {
+–bg: #1a1208;
+–card-bg: #2a2520;
+–ink: #f5f0e8;
+–accent: #ff6b3d;
+–accent2: #4a9d7a;
+–muted: #a89988;
+–border: #3d362c;
+–known: #4a9d7a;
+–unknown: #ff6b3d;
+}
+
 - { margin:0; padding:0; box-sizing:border-box; }
 
 body {
@@ -50,7 +63,8 @@ header {
 width: 100%;
 padding: 20px 30px 16px;
 display: flex;
-align-items: baseline;
+align-items: center;
+justify-content: space-between;
 gap: 12px;
 border-bottom: 1px solid var(–border);
 background: var(–bg);
@@ -71,6 +85,38 @@ font-size: 0.7rem;
 color: var(–muted);
 letter-spacing: 0.08em;
 text-transform: uppercase;
+}
+
+.theme-toggle {
+width: 36px;
+height: 36px;
+border-radius: 50%;
+border: 1.5px solid var(–border);
+background: var(–card-bg);
+cursor: pointer;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 1.2rem;
+transition: all 0.3s ease;
+flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+border-color: var(–accent);
+transform: rotate(20deg) scale(1.1);
+}
+
+.theme-toggle:active {
+transform: rotate(20deg) scale(0.95);
+}
+
+body.dark-mode .theme-toggle .theme-icon::before {
+content: ‘☀️’;
+}
+
+body:not(.dark-mode) .theme-toggle .theme-icon::before {
+content: ‘🌙’;
 }
 
 /* STATS BAR */
@@ -125,6 +171,44 @@ height: 100%;
 background: var(–accent2);
 border-radius: 2px;
 transition: width 0.4s ease;
+}
+
+/* MODE SELECTOR */
+.mode-selector {
+width: 100%;
+max-width: 680px;
+padding: 16px 20px 8px;
+display: flex;
+gap: 8px;
+justify-content: center;
+}
+
+.mode-btn {
+font-family: ‘DM Mono’, monospace;
+font-size: 0.65rem;
+padding: 8px 16px;
+border: 1.5px solid var(–border);
+border-radius: 16px;
+background: var(–card-bg);
+color: var(–muted);
+cursor: pointer;
+transition: all 0.2s;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+font-weight: 500;
+}
+
+.mode-btn:hover {
+border-color: var(–accent);
+color: var(–accent);
+transform: translateY(-1px);
+}
+
+.mode-btn.active {
+background: var(–accent);
+color: var(–bg);
+border-color: var(–accent);
+box-shadow: 0 2px 6px rgba(200, 71, 26, 0.3);
 }
 
 /* CHAPTER FILTER */
@@ -470,8 +554,13 @@ body {
 <body>
 
 <header>
-  <h1>Rivstart A1/A2</h1>
-  <span class="subtitle">Vokabeltrainer · Spaced Repetition</span>
+  <div style="display:flex; align-items:baseline; gap:12px; flex:1;">
+    <h1>Rivstart A1/A2</h1>
+    <span class="subtitle">Vokabeltrainer · Spaced Repetition</span>
+  </div>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Dunkles Design umschalten">
+    <span class="theme-icon"></span>
+  </button>
 </header>
 
 <div class="stats-bar">
@@ -484,6 +573,8 @@ body {
 <div class="progress-wrap">
   <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
 </div>
+
+<div class="mode-selector" id="modeSelector"></div>
 
 <div class="chapter-filter" id="chapterFilter"></div>
 
@@ -1033,31 +1124,34 @@ function saveState() {
 let srsState = loadState();
 let roundCounter = (srsState.__round) ? srsState.__round : 0;
 
-function getCard(idx) {
-  if (!srsState[idx]) srsState[idx] = { level: 0, nextRound: 0 };
-  return srsState[idx];
+function getCard(idx, mode = learningMode) {
+  const key = idx + '_' + mode;
+  if (!srsState[key]) srsState[key] = { level: 0, nextRound: 0 };
+  return srsState[key];
 }
 
-function isDue(idx) {
-  const c = getCard(idx);
+function isDue(idx, mode = learningMode) {
+  const c = getCard(idx, mode);
   return c.nextRound <= roundCounter;
 }
 
-function recordAnswer(idx, correct) {
-  const c = getCard(idx);
+function recordAnswer(idx, correct, mode = learningMode) {
+  const c = getCard(idx, mode);
   if (correct) {
     c.level = Math.min(5, c.level + 1);
   } else {
     c.level = Math.max(0, c.level - 1);
   }
   c.nextRound = roundCounter + INTERVALS[c.level];
-  srsState[idx] = c;
+  const key = idx + '_' + mode;
+  srsState[key] = c;
   saveState();
 }
 
 // ─── APP STATE ────────────────────────────────────────────────────────────────
 let allCards = RAW.map((r, i) => ({ id: i, sv: r[0], de: r[1], chapter: r[2] }));
 let activeChapters = new Set(Array.from({length: 20}, (_, i) => i + 1));
+let learningMode = 'sv2de'; // 'sv2de', 'de2sv', or 'mixed'
 let queue = [];
 let currentIdx = -1;
 let isFlipped = false;
@@ -1067,8 +1161,18 @@ let sessionTotal = 0;
 // ─── QUEUE BUILDER ────────────────────────────────────────────────────────────
 function buildQueue() {
   const filtered = allCards.filter(c => activeChapters.has(c.chapter));
-  // Prioritize due cards, then new cards, then scheduled
-  const due = filtered.filter(c => isDue(c.id));
+  
+  let due;
+  if (learningMode === 'mixed') {
+    // Mixed mode: combine both directions, pick randomly which to show
+    const dueSv2De = filtered.filter(c => isDue(c.id, 'sv2de')).map(c => ({...c, mode: 'sv2de'}));
+    const dueDe2Sv = filtered.filter(c => isDue(c.id, 'de2sv')).map(c => ({...c, mode: 'de2sv'}));
+    due = [...dueSv2De, ...dueDe2Sv];
+  } else {
+    // Single direction mode
+    due = filtered.filter(c => isDue(c.id, learningMode)).map(c => ({...c, mode: learningMode}));
+  }
+  
   // Shuffle due cards
   for (let i = due.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -1094,20 +1198,34 @@ function showCard(card) {
   const wasFlipped = isFlipped;
   isFlipped = false;
 
-  // Parse article from word (en/ett prefix)
-  let article = '';
-  let word = card.sv;
-  if (card.sv.startsWith('en ')) { article = 'en'; word = card.sv.slice(3); }
-  else if (card.sv.startsWith('ett ')) { article = 'ett'; word = card.sv.slice(4); }
+  const currentMode = card.mode || learningMode;
+  const isSv2De = currentMode === 'sv2de';
+  
+  // Determine front and back based on mode
+  let frontText, backText, article = '';
+  
+  if (isSv2De) {
+    // Swedish → German
+    let word = card.sv;
+    if (card.sv.startsWith('en ')) { article = 'en'; word = card.sv.slice(3); }
+    else if (card.sv.startsWith('ett ')) { article = 'ett'; word = card.sv.slice(4); }
+    frontText = word;
+    backText = card.de;
+  } else {
+    // German → Swedish  
+    frontText = card.de;
+    backText = card.sv;
+    article = ''; // No article on front for DE→SV
+  }
 
   const applyContent = () => {
     document.getElementById('cardChapter').textContent = 'Kap. ' + card.chapter;
     document.getElementById('cardChapterBack').textContent = 'Kap. ' + card.chapter;
     document.getElementById('cardNum').textContent = (currentIdx + 1) + ' / ' + queue.length;
     document.getElementById('cardArticle').textContent = article;
-    document.getElementById('cardWord').textContent = word;
-    document.getElementById('cardTranslation').textContent = card.de;
-    const c = getCard(card.id);
+    document.getElementById('cardWord').textContent = frontText;
+    document.getElementById('cardTranslation').textContent = backText;
+    const c = getCard(card.id, currentMode);
     const levelNames = ['Neu','Gesehen','Gelernt','Gefestigt','Stark','Gemeistert'];
     const srsEl = document.getElementById('srsInfo');
     srsEl.textContent = levelNames[c.level];
@@ -1144,7 +1262,8 @@ function flipCard() {
 
 function answer(correct) {
   const card = queue[currentIdx];
-  recordAnswer(card.id, correct);
+  const currentMode = card.mode || learningMode;
+  recordAnswer(card.id, correct, currentMode);
   sessionTotal++;
   if (correct) sessionCorrect++;
   roundCounter++;
@@ -1169,9 +1288,27 @@ function showDone() {
 function updateStats() {
   const filtered = allCards.filter(c => activeChapters.has(c.chapter));
   const total = filtered.length;
-  const mastered = filtered.filter(c => getCard(c.id).level >= 3).length;
-  const unknown = filtered.filter(c => getCard(c.id).level < 2).length;
-  const due = filtered.filter(c => isDue(c.id)).length;
+  
+  // Stats based on current mode (or combined for mixed)
+  let mastered, unknown, due;
+  if (learningMode === 'mixed') {
+    // Mixed: show combined stats
+    const masteredSv = filtered.filter(c => getCard(c.id, 'sv2de').level >= 3).length;
+    const masteredDe = filtered.filter(c => getCard(c.id, 'de2sv').level >= 3).length;
+    mastered = Math.max(masteredSv, masteredDe); // Best of both
+    
+    const unknownSv = filtered.filter(c => getCard(c.id, 'sv2de').level < 2).length;
+    const unknownDe = filtered.filter(c => getCard(c.id, 'de2sv').level < 2).length;
+    unknown = Math.max(unknownSv, unknownDe); // Worst of both
+    
+    const dueSv = filtered.filter(c => isDue(c.id, 'sv2de')).length;
+    const dueDe = filtered.filter(c => isDue(c.id, 'de2sv')).length;
+    due = dueSv + dueDe; // Total from both
+  } else {
+    mastered = filtered.filter(c => getCard(c.id, learningMode).level >= 3).length;
+    unknown = filtered.filter(c => getCard(c.id, learningMode).level < 2).length;
+    due = filtered.filter(c => isDue(c.id, learningMode)).length;
+  }
 
   document.getElementById('statTotal').textContent = total;
   document.getElementById('statKnown').textContent = mastered;
@@ -1183,6 +1320,32 @@ function updateStats() {
     queue.length > 0
       ? 'Karte ' + (currentIdx + 1) + ' von ' + queue.length + ' in dieser Runde'
       : '';
+}
+
+// ─── MODE SELECTOR ────────────────────────────────────────────────────────────
+function buildModeSelector() {
+  const ms = document.getElementById('modeSelector');
+  ms.innerHTML = '';
+
+  const modes = [
+    { id: 'sv2de', label: 'SV → DE', title: 'Schwedisch → Deutsch' },
+    { id: 'de2sv', label: 'DE → SV', title: 'Deutsch → Schwedisch' },
+    { id: 'mixed', label: 'Gemischt', title: 'Beide Richtungen gemischt' }
+  ];
+
+  modes.forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'mode-btn' + (learningMode === mode.id ? ' active' : '');
+    btn.textContent = mode.label;
+    btn.title = mode.title;
+    btn.onclick = () => {
+      learningMode = mode.id;
+      document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      restart();
+    };
+    ms.appendChild(btn);
+  });
 }
 
 // ─── CHAPTER FILTER ───────────────────────────────────────────────────────────
@@ -1263,6 +1426,31 @@ function resetAll() {
   restart();
 }
 
+// ─── THEME TOGGLE ─────────────────────────────────────────────────────────────
+function toggleTheme() {
+  document.body.classList.toggle('dark-mode');
+  const isDark = document.body.classList.contains('dark-mode');
+  try {
+    localStorage.setItem('theme', isDark ? 'dark' : 'light');
+  } catch(e) {
+    console.log('Cannot save theme preference');
+  }
+}
+
+function loadTheme() {
+  try {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      document.body.classList.add('dark-mode');
+    }
+  } catch(e) {
+    // Use system preference if localStorage unavailable
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.classList.add('dark-mode');
+    }
+  }
+}
+
 // ─── KEYBOARD ─────────────────────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
@@ -1301,6 +1489,8 @@ document.body.addEventListener('touchmove', function(e) {
   }
 }, { passive: false });
 
+loadTheme();
+buildModeSelector();
 buildChapterFilter();
 restart();
 </script>
