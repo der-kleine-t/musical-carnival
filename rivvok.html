@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Rivstart A1/A2 – Vokabeltrainer</title>
+
+<!-- iOS Web App Meta Tags -->
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Schwedisch">
+<meta name="theme-color" content="#f5f0e8">
+
+<!-- App Icon (inline SVG as data URL) -->
+
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23f5f0e8'/><path d='M45 90 L90 45 L135 90 L90 135 Z' fill='%23c8471a'/><circle cx='90' cy='90' r='25' fill='%232a6b4f'/><text x='90' y='100' font-family='sans-serif' font-size='32' font-weight='bold' fill='%23fffdf7' text-anchor='middle'>SV</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' fill='%23f5f0e8'/><path d='M45 90 L90 45 L135 90 L90 135 Z' fill='%23c8471a'/><circle cx='90' cy='90' r='25' fill='%232a6b4f'/><text x='90' y='100' font-family='sans-serif' font-size='32' font-weight='bold' fill='%23fffdf7' text-anchor='middle'>SV</text></svg>">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,600;1,300&family=DM+Mono:wght@400;500&display=swap');
+
+:root {
+–bg: #f5f0e8;
+–card-bg: #fffdf7;
+–ink: #1a1208;
+–accent: #c8471a;
+–accent2: #2a6b4f;
+–muted: #8a7b6a;
+–border: #d4c9b4;
+–known: #2a6b4f;
+–unknown: #c8471a;
+–skip: #8a7b6a;
+}
+
+- { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+font-family: ‘DM Mono’, monospace;
+background: var(–bg);
+color: var(–ink);
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+}
+
+/* HEADER */
+header {
+width: 100%;
+padding: 20px 30px 16px;
+display: flex;
+align-items: baseline;
+gap: 12px;
+border-bottom: 1px solid var(–border);
+background: var(–bg);
+position: sticky;
+top: 0;
+z-index: 10;
+}
+
+header h1 {
+font-family: ‘Fraunces’, serif;
+font-size: 1.5rem;
+font-weight: 600;
+letter-spacing: -0.02em;
+}
+
+header .subtitle {
+font-size: 0.7rem;
+color: var(–muted);
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+
+/* STATS BAR */
+.stats-bar {
+width: 100%;
+max-width: 680px;
+display: flex;
+gap: 8px;
+padding: 14px 20px 0;
+font-size: 0.65rem;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+color: var(–muted);
+}
+
+.stat {
+display: flex;
+align-items: center;
+gap: 5px;
+padding: 4px 10px;
+border: 1px solid var(–border);
+border-radius: 20px;
+background: var(–card-bg);
+}
+
+.stat .dot {
+width: 7px; height: 7px;
+border-radius: 50%;
+}
+.stat.s-total .dot { background: var(–muted); }
+.stat.s-known .dot { background: var(–known); }
+.stat.s-unknown .dot { background: var(–unknown); }
+.stat.s-due { border-color: var(–accent); color: var(–accent); }
+
+/* PROGRESS BAR */
+.progress-wrap {
+width: 100%;
+max-width: 680px;
+padding: 10px 20px 0;
+}
+
+.progress-track {
+width: 100%;
+height: 3px;
+background: var(–border);
+border-radius: 2px;
+overflow: hidden;
+}
+
+.progress-fill {
+height: 100%;
+background: var(–accent2);
+border-radius: 2px;
+transition: width 0.4s ease;
+}
+
+/* CHAPTER FILTER */
+.chapter-filter {
+width: 100%;
+max-width: 680px;
+padding: 12px 20px 0;
+display: flex;
+flex-wrap: wrap;
+gap: 6px;
+}
+
+.ch-btn {
+font-family: ‘DM Mono’, monospace;
+font-size: 0.6rem;
+padding: 3px 9px;
+border: 1px solid var(–border);
+border-radius: 12px;
+background: var(–card-bg);
+color: var(–muted);
+cursor: pointer;
+transition: all 0.15s;
+letter-spacing: 0.04em;
+}
+
+.ch-btn:hover { border-color: var(–ink); color: var(–ink); }
+.ch-btn.active { background: var(–ink); color: var(–bg); border-color: var(–ink); }
+
+/* CARD AREA */
+.card-area {
+flex: 1;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 30px 20px;
+width: 100%;
+max-width: 680px;
+}
+
+.card-wrap {
+perspective: 1200px;
+width: 100%;
+max-width: 500px;
+height: 280px;
+}
+
+.card {
+width: 100%;
+height: 100%;
+position: relative;
+transform-style: preserve-3d;
+transition: transform 0.5s cubic-bezier(.4,0,.2,1);
+cursor: pointer;
+}
+
+.card.flipped { transform: rotateY(180deg); }
+
+.card-face {
+position: absolute;
+inset: 0;
+backface-visibility: hidden;
+border: 1px solid var(–border);
+border-radius: 4px;
+background: var(–card-bg);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 30px;
+box-shadow: 2px 3px 0 var(–border);
+}
+
+.card-back { transform: rotateY(180deg); }
+
+.card-chapter {
+position: absolute;
+top: 12px;
+left: 16px;
+font-size: 0.6rem;
+color: var(–muted);
+letter-spacing: 0.1em;
+text-transform: uppercase;
+}
+
+.card-number {
+position: absolute;
+top: 12px;
+right: 16px;
+font-size: 0.6rem;
+color: var(–muted);
+}
+
+.card-word {
+font-family: ‘Fraunces’, serif;
+font-size: 2.8rem;
+font-weight: 300;
+letter-spacing: -0.03em;
+text-align: center;
+line-height: 1.1;
+}
+
+.card-article {
+font-size: 0.7rem;
+color: var(–muted);
+margin-bottom: 4px;
+letter-spacing: 0.06em;
+}
+
+.card-hint {
+position: absolute;
+bottom: 14px;
+font-size: 0.6rem;
+color: var(–muted);
+letter-spacing: 0.06em;
+}
+
+.card-translation {
+font-family: ‘Fraunces’, serif;
+font-size: 2.2rem;
+font-weight: 300;
+font-style: italic;
+text-align: center;
+letter-spacing: -0.02em;
+line-height: 1.2;
+}
+
+.card-srs-info {
+position: absolute;
+bottom: 14px;
+font-size: 0.6rem;
+letter-spacing: 0.04em;
+}
+
+.srs-level-0 { color: var(–unknown); }
+.srs-level-1 { color: #c88a1a; }
+.srs-level-2 { color: #8a9a2a; }
+.srs-level-3, .srs-level-4, .srs-level-5 { color: var(–known); }
+
+/* ANSWER BUTTONS */
+.answer-btns {
+display: flex;
+gap: 12px;
+margin-top: 22px;
+width: 100%;
+max-width: 500px;
+}
+
+.btn {
+font-family: ‘DM Mono’, monospace;
+font-size: 0.7rem;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+padding: 10px 0;
+flex: 1;
+border: 1px solid var(–border);
+border-radius: 3px;
+background: var(–card-bg);
+cursor: pointer;
+transition: all 0.15s;
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 6px;
+}
+
+.btn:hover { transform: translateY(-1px); box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+.btn:active { transform: translateY(0); }
+
+.btn-known {
+border-color: var(–known);
+color: var(–known);
+}
+.btn-known:hover { background: var(–known); color: white; }
+
+.btn-unknown {
+border-color: var(–unknown);
+color: var(–unknown);
+}
+.btn-unknown:hover { background: var(–unknown); color: white; }
+
+.btn-flip {
+border-color: var(–ink);
+color: var(–ink);
+font-size: 0.65rem;
+}
+.btn-flip:hover { background: var(–ink); color: var(–bg); }
+
+/* DONE SCREEN */
+.done-screen {
+display: none;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+gap: 16px;
+padding: 40px 20px;
+text-align: center;
+}
+
+.done-screen h2 {
+font-family: ‘Fraunces’, serif;
+font-size: 2rem;
+font-weight: 300;
+}
+
+.done-screen p {
+color: var(–muted);
+font-size: 0.75rem;
+line-height: 1.7;
+}
+
+.done-screen .btn {
+max-width: 260px;
+padding: 12px 24px;
+}
+
+/* CONTROLS */
+.controls {
+display: flex;
+gap: 8px;
+padding: 0 20px 20px;
+width: 100%;
+max-width: 680px;
+flex-wrap: wrap;
+}
+
+.ctrl-btn {
+font-family: ‘DM Mono’, monospace;
+font-size: 0.6rem;
+letter-spacing: 0.06em;
+text-transform: uppercase;
+padding: 6px 14px;
+border: 1px solid var(–border);
+border-radius: 20px;
+background: var(–card-bg);
+cursor: pointer;
+color: var(–muted);
+transition: all 0.15s;
+}
+
+.ctrl-btn:hover { border-color: var(–ink); color: var(–ink); }
+
+/* SRS QUEUE INDICATOR */
+.queue-info {
+width: 100%;
+max-width: 680px;
+padding: 8px 20px 0;
+font-size: 0.62rem;
+color: var(–muted);
+letter-spacing: 0.04em;
+}
+
+/* RESPONSIVE */
+@media (max-width: 520px) {
+.card-word { font-size: 2rem; }
+.card-wrap { height: 240px; }
+.card-translation { font-size: 1.7rem; }
+}
+
+/* MOBILE OPTIMIZATIONS */
+@media (max-width: 768px) {
+/* Larger touch targets for mobile */
+.btn {
+padding: 14px 0;
+font-size: 0.75rem;
+min-height: 48px;
+}
+
+```
+.ch-btn {
+  padding: 6px 12px;
+  font-size: 0.65rem;
+  min-height: 36px;
+}
+
+/* Better card sizing on mobile */
+.card-wrap {
+  max-width: 100% !important;
+  height: 320px !important;
+}
+
+.card-word {
+  font-size: 2.2rem !important;
+}
+
+.card-translation {
+  font-size: 1.6rem !important;
+}
+
+/* Improve answer button layout */
+.answer-btns {
+  width: 100%;
+  max-width: 100%;
+  gap: 12px;
+}
+
+.answer-btns button {
+  font-size: 0.8rem;
+}
+
+/* Better stats layout on small screens */
+.stats-bar {
+  font-size: 0.6rem;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.stat {
+  padding: 5px 8px;
+}
+```
+
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+body {
+/* Safe area for notch/home indicator */
+padding-bottom: env(safe-area-inset-bottom);
+}
+
+```
+/* Prevent iOS text size adjustment */
+body {
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Better tap highlights */
+.btn, .ch-btn, .card {
+  -webkit-tap-highlight-color: rgba(200, 71, 26, 0.2);
+}
+
+/* Smooth scrolling */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+```
+
+}
+</style>
+
+</head>
+<body>
+
+<header>
+  <h1>Rivstart A1/A2</h1>
+  <span class="subtitle">Vokabeltrainer · Spaced Repetition</span>
+</header>
+
+<div class="stats-bar">
+  <div class="stat s-total"><span class="dot"></span><span id="statTotal">0</span> gesamt</div>
+  <div class="stat s-known"><span class="dot"></span><span id="statKnown">0</span> gelernt</div>
+  <div class="stat s-unknown"><span class="dot"></span><span id="statUnknown">0</span> offen</div>
+  <div class="stat s-due">⏳ <span id="statDue">0</span> fällig</div>
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</div>
+
+<div class="chapter-filter" id="chapterFilter"></div>
+
+<div class="queue-info" id="queueInfo"></div>
+
+<div class="card-area" id="cardArea">
+  <div class="card-wrap" id="card-wrap">
+    <div class="card" id="mainCard" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-chapter" id="cardChapter"></div>
+        <div class="card-number" id="cardNum"></div>
+        <div class="card-article" id="cardArticle"></div>
+        <div class="card-word" id="cardWord">–</div>
+        <div class="card-hint">antippen zum Umdrehen</div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-chapter" id="cardChapterBack"></div>
+        <div class="card-translation" id="cardTranslation"></div>
+        <div class="card-srs-info" id="srsInfo"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="answer-btns" id="answerBtns" style="display:none">
+    <button class="btn btn-unknown" onclick="answer(false)">✗ Nicht gewusst</button>
+    <button class="btn btn-known" onclick="answer(true)">✓ Gewusst</button>
+  </div>
+
+  <div class="answer-btns" id="flipBtns">
+    <button class="btn btn-flip" onclick="flipCard()">↻ Umdrehen</button>
+  </div>
+
+  <div class="done-screen" id="doneScreen">
+    <h2>Sitzung beendet</h2>
+    <p id="doneStats"></p>
+    <button class="btn btn-known" onclick="resetSession()" style="max-width:260px;padding:12px">
+      ↺ Neue Runde
+    </button>
+    <button class="btn btn-unknown" onclick="resetAll()" style="max-width:260px;padding:12px">
+      ⟳ Alles zurücksetzen
+    </button>
+  </div>
+</div>
+
+<div class="controls">
+  <button class="ctrl-btn" onclick="shuffleDue()">Mischen</button>
+  <button class="ctrl-btn" onclick="showOnlyDue()">Nur fällige</button>
+  <button class="ctrl-btn" onclick="showAll()">Alle zeigen</button>
+  <button class="ctrl-btn" onclick="resetAll()">Zurücksetzen</button>
+</div>
+
+<script>
+// ─── VOCABULARY DATA ──────────────────────────────────────────────────────────
+// Format: [swedish_full, german, chapter]
+// Swedish includes article prefix where present in PDF (en/ett shown separately)
+const RAW = [
+  // KAP 1
+  ["arbetar","arbeitet",1],["ett barn","ein Kind",1],["bor","wohnt",1],
+  ["ett efternamn","ein Nachname",1],["eller","oder",1],["en flickvän","eine Freundin",1],
+  ["en fråga","eine Frage",1],["från","aus / von",1],["gift","verheiratet",1],
+  ["har","hat / haben",1],["heter","heißt",1],["inte","nicht",1],
+  ["jobbar","arbeitet (ugs.)",1],["kommer","kommt",1],["kul","toll / Spaß",1],
+  ["ett land","ein Land",1],["ligger","liegt",1],["läser","liest / studiert",1],
+  ["men","aber",1],["ett namn","ein Name",1],["nu","jetzt",1],
+  ["och","und",1],["pluggar","büffelt / lernt",1],["en pojkvän","ein Freund (Beziehung)",1],
+  ["pratar","spricht / redet",1],["skriver","schreibt",1],["en son","ein Sohn",1],
+  ["ett språk","eine Sprache",1],["säger","sagt",1],["talar","spricht",1],
+  ["tittar","schaut",1],["ursäkta","Entschuldigung",1],["vad","was",1],
+  ["var","war / wo",1],["varifrån","woher",1],["är","ist / sind",1],
+  // KAP 2
+  ["dricker","trinkt",2],["en fest","eine Party",2],["fin","schön / nett",2],
+  ["en flaska","eine Flasche",2],["förkyld","erkältet",2],["ganska","ziemlich",2],
+  ["går","geht",2],["gör","macht / tut",2],["en handduk","ein Handtuch",2],
+  ["här","hier",2],["igen","wieder",2],["intresserad","interessiert",2],
+  ["jättebra","sehr gut / super",2],["längtar","sehnt sich",2],["en läxa","eine Hausaufgabe",2],
+  ["med","mit",2],["mår","geht es (mir/dir)",2],["en mössa","eine Mütze",2],
+  ["också","auch",2],["pengar","Geld",2],["rolig","lustig / witzig",2],
+  ["en sak","eine Sache / ein Ding",2],["spelar","spielt",2],["svår","schwer / schwierig",2],
+  ["sådär","so lala / mittelmäßig",2],["såklart","natürlich / klar",2],["tillsammans","zusammen",2],
+  ["trivs","fühlt sich wohl",2],["träffar","trifft",2],["trött","müde",2],
+  ["varför","warum",2],["välkommen","willkommen",2],["en vän","ein Freund / eine Freundin",2],
+  ["en väska","eine Tasche",2],["åker","fährt",2],["ett äpple","ein Apfel",2],
+  // KAP 3
+  ["börjar","beginnt",3],["en dag","ein Tag",3],["en frukost","ein Frühstück",3],
+  ["frågar","fragt",3],["född","geboren",3],["gillar","mag / findet gut",3],
+  ["hungrig","hungrig",3],["hur","wie",3],["en kanelbulle","ein Zimtbrötchen",3],
+  ["en kompis","ein Kumpel / Freund",3],["en kväll","ein Abend",3],["lyssnar","hört zu",3],
+  ["lägger sig","legt sich hin / geht schlafen",3],["en middag","ein Mittagessen / Abendessen",3],["en morgon","ein Morgen",3],
+  ["många","viele",3],["ny","neu",3],["när","wenn / wann",3],
+  ["ofta","oft",3],["en pensionär","ein Rentner / eine Rentnerin",3],["promenerar","geht spazieren",3],
+  ["ringer","ruft an",3],["sedan","dann / seitdem",3],["sjuk","krank",3],
+  ["somnar","schläft ein",3],["sover","schläft",3],["stor","groß",3],
+  ["stänger","schließt",3],["svarar","antwortet",3],["en tid","eine Zeit",3],
+  ["törstig","durstig",3],["vaknar","wacht auf",3],["vatten","Wasser",3],
+  ["vilken","welcher / welche / welches",3],["äter","isst",3],["öppnar","öffnet",3],
+  // KAP 4
+  ["en affär","ein Geschäft / Laden",4],["alla","alle",4],["alltid","immer",4],
+  ["använder","benutzt / verwendet",4],["en apelsin","eine Orange",4],["bakar","bäckt",4],
+  ["behöver","braucht",4],["berättar","erzählt",4],["betalar","bezahlt",4],
+  ["en bild","ein Bild",4],["en bit","ein Stück",4],["en bokstav","ein Buchstabe",4],
+  ["bra","gut",4],["en citron","eine Zitrone",4],["dricker","trinkt",4],
+  ["där","dort / da",4],["efter","nach",4],["fikar","trinkt Kaffee / Fika",4],
+  ["finns","gibt es / existiert",4],["fyra","vier",4],["först","zuerst / erst",4],
+  ["förstår","versteht",4],["glad","froh / glücklich",4],["en gurka","eine Gurke",4],
+  ["går","geht",4],["gärna","gern",4],["gör","macht",4],
+  ["har","hat",4],["havremjölk","Hafermilch",4],["hjälper","hilft",4],
+  ["en hylla","ein Regal",4],["här","hier",4],["höger","rechts",4],
+  ["ibland","manchmal",4],["en idé","eine Idee",4],["igen","wieder",4],
+  ["en kaka","ein Kuchen / Keks",4],["kan","kann",4],["en klasskompis","ein Klassenkamerad",4],
+  ["en kollega","ein Kollege",4],["kommer","kommt",4],["kontanter","Bargeld",4],
+  ["ett kort","eine Karte / Kreditkarte",4],["kostar","kostet",4],["ett kvitto","ein Kassenbon",4],
+  ["köper","kauft",4],["lite","ein bisschen / wenig",4],["lång","lang",4],
+  ["en läsk","eine Limonade",4],["en läxa","eine Hausaufgabe",4],["mellan","zwischen",4],
+  ["en middag","ein Abendessen",4],["mjöl","Mehl",4],["måste","muss",4],
+  ["ett paket","ein Paket",4],["en plats","ein Platz / Ort",4],["en purjolök","ein Porree / Lauch",4],
+  ["ett päron","eine Birne",4],["ska","soll / wird (Zukunft)",4],["en sko","ein Schuh",4],
+  ["en smörgås","ein belegtes Brot",4],["socker","Zucker",4],["stannar","bleibt / hält an",4],
+  ["säljer","verkauft",4],["tar","nimmt",4],["vill","will / möchte",4],
+  ["ett ägg","ein Ei",4],["en älg","ein Elch",4],["älskar","liebt",4],
+  ["ett äpple","ein Apfel",4],["äter","isst",4],["öl","Bier",4],
+  // KAP 5
+  ["aldrig","nie / niemals",5],["en bio","ein Kino",5],["en blomma","eine Blume",5],
+  ["brukar","pflegt zu / tut gewöhnlich",5],["ett bär","eine Beere",5],["en dator","ein Computer",5],
+  ["en deckare","ein Krimi",5],["duschar","duscht",5],["dålig","schlecht",5],
+  ["en eftermiddag","ein Nachmittag",5],["fiskar","angelt",5],["en flod","ein Fluss",5],
+  ["forskar","forscht",5],["en forskare","ein Forscher",5],["framför","vor / gegenüber",5],
+  ["först","zuerst",5],["glad","froh",5],["ett glas","ein Glas",5],
+  ["grönsaker","Gemüse",5],["gör","macht",5],["handlar om","handelt von / geht um",5],
+  ["en hund","ein Hund",5],["hänger med","kommt mit",5],["ibland","manchmal",5],
+  ["ett intresse","ein Interesse",5],["kanske","vielleicht",5],["klär på sig","zieht sich an",5],
+  ["klättrar","klettert",5],["kollar","schaut / guckt",5],["ett liv","ein Leben",5],
+  ["en loppis","ein Flohmarkt",5],["lugn","ruhig",5],["låter","klingt",5],
+  ["en lägenhet","eine Wohnung",5],["länge","lange",5],["läskig","gruselig",5],
+  ["mat","Essen",5],["med","mit",5],["myser","gemütlich sein / kuscheln",5],
+  ["ett möte","ein Treffen / Meeting",5],["en natt","eine Nacht",5],["ett nummer","eine Nummer",5],
+  ["olika","verschiedene / unterschiedlich",5],["planerar","plant",5],["romantisk","romantisch",5],
+  ["samlar","sammelt",5],["en semester","ein Urlaub",5],["en siffra","eine Ziffer / Zahl",5],
+  ["självklart","selbstverständlich",5],["en skorpa","eine Kruste / ein Zwieback",5],["en skräckfilm","ein Horrorfilm",5],
+  ["slappar","entspannt sich",5],["slutar","hört auf / endet",5],["en sommarstuga","ein Sommerhaus",5],
+  ["springer","rennt / läuft",5],["en stad","eine Stadt",5],["en stund","eine Weile",5],
+  ["stänger","schließt",5],["sällan","selten",5],["en tidning","eine Zeitung",5],
+  ["en timme","eine Stunde",5],["en tisdag","ein Dienstag",5],["en tjej","ein Mädchen",5],
+  ["torsdag","Donnerstag",5],["tråkig","langweilig",5],["en trädgård","ein Garten",5],
+  ["träffar","trifft",5],["tycker om","mag / findet gut",5],["tänker","denkt",5],
+  ["utan","ohne",5],["varje","jeder / jede / jedes",5],["en vecka","eine Woche",5],
+  // KAP 6
+  ["bara","nur / bloß",6],["ett barnbarn","ein Enkelkind",6],["berömd","berühmt",6],
+  ["betyder","bedeutet",6],["blir","wird",6],["ett bonusbarn","ein Stiefkind",6],
+  ["en bror","ein Bruder",6],["bygger","baut",6],["båda","beide",6],
+  ["delar","teilt",6],["en dotter","eine Tochter",6],["drömmer","träumt",6],
+  ["dör","stirbt",6],["egen","eigen",6],["ett exempel","ein Beispiel",6],
+  ["en fabrik","eine Fabrik",6],["en farbror","ein Onkel (väterlich)",6],["en farfar","ein Opa (väterlich)",6],
+  ["farlig","gefährlich",6],["en faster","eine Tante (väterlich)",6],["flyttar","zieht um",6],
+  ["fortsätter","macht weiter / setzt fort",6],["en fru","eine Ehefrau",6],["följer med","kommt mit",6],
+  ["en författare","ein Schriftsteller",6],["en förskola","ein Kindergarten",6],["en förälder","ein Elternteil",6],
+  ["gammal","alt",6],["ganska","ziemlich",6],["en gruva","eine Mine / ein Bergwerk",6],
+  ["en gäst","ein Gast",6],["ett halvsyskon","ein Halbgeschwister",6],["en helg","ein Wochenende",6],
+  ["hör","hört",6],["i höstas","letzten Herbst",6],["ibland","manchmal",6],
+  ["en journalist","ein Journalist",6],["klimat","Klima",6],["ett krig","ein Krieg",6],
+  ["en kung","ein König",6],["en kusin","ein Cousin",6],["känd","bekannt / berühmt",6],
+  ["känner","kennt / fühlt",6],["köper","kauft",6],["en man","ein Mann / Ehemann",6],
+  ["mellan","zwischen",6],["en morbror","ein Onkel (mütterlich)",6],["en morfar","ein Opa (mütterlich)",6],
+  ["en mormor","eine Oma (mütterlich)",6],["en moster","eine Tante (mütterlich)",6],["nähä!","nein wirklich! / ach was!",6],
+  ["nästan","fast / beinahe",6],["pluggar","lernt / büffelt",6],["ett pris","ein Preis",6],
+  ["reser","reist",6],["en skådespelare","ein Schauspieler",6],["en släkt","eine Verwandtschaft",6],
+  ["ett stipendium","ein Stipendium",6],["en svägerska","eine Schwägerin",6],["ett syskon","ein Geschwister",6],
+  ["en syster","eine Schwester",6],["sällan","selten",6],["tillbaka","zurück",6],
+  ["tjänar","verdient",6],["vacker","schön",6],["ett vapen","eine Waffe",6],
+  ["en vecka","eine Woche",6],["viktig","wichtig",6],["en värld","eine Welt",6],
+  ["åker","fährt",6],["ett år","ein Jahr",6],["öppen","offen",6],
+  // KAP 7
+  ["en avdelning","eine Abteilung",7],["ett bestick","Besteck",7],["billig","billig / günstig",7],
+  ["blommig","geblümt",7],["bomull","Baumwolle",7],["brun","braun",7],
+  ["byxor","Hosen",7],["drömmer","träumt",7],["dyr","teuer",7],
+  ["ett erbjudande","ein Angebot",7],["ful","hässlich",7],["en färg","eine Farbe",7],
+  ["förra","letzte(r/s)",7],["en gaffel","eine Gabel",7],["en garanti","eine Garantie",7],
+  ["en gardin","ein Vorhang",7],["ger","gibt",7],["glad","froh",7],
+  ["god","gut / lecker",7],["en grej","ein Ding / Sache (ugs.)",7],["en gryta","ein Schmortopf / Eintopf",7],
+  ["gul","gelb",7],["hemma","zuhause",7],["hård","hart",7],
+  ["ingen","niemand / kein",7],["jämför","vergleicht",7],["en kastrull","ein Kochtopf",7],
+  ["kläder","Kleidung",7],["en klänning","ein Kleid",7],["en kniv","ein Messer",7],
+  ["en kollega","ein Kollege",7],["kontrollerar","kontrolliert / überprüft",7],["en kudde","ein Kissen",7],
+  ["en kvalitet","eine Qualität",7],["ett kök","eine Küche",7],["köttfärssås","Bolognese-Sauce",7],
+  ["lagar","kocht / repariert",7],["ett lakan","ein Bettlaken",7],["letar","sucht",7],
+  ["lång","lang",7],["lätt","leicht / einfach",7],["löparskor","Laufschuhe",7],
+  ["en madrass","eine Matratze",7],["en medlem","ein Mitglied",7],["mjuk","weich",7],
+  ["mörk","dunkel",7],["någon","jemand / ein(e)",7],["nästan","fast",7],
+  ["omodern","unmodern",7],["passar","passt",7],["populär","beliebt",7],
+  ["en resväska","ein Koffer",7],["rolig","lustig",7],["räcker","reicht",7],
+  ["röd","rot",7],["en sked","ein Löffel",7],["en sko","ein Schuh",7],
+  ["en skog","ein Wald",7],["skön","schön / angenehm",7],["smal","schmal / schlank",7],
+  ["snygg","schick / hübsch",7],["en storlek","eine Größe",7],["ställer","stellt",7],
+  ["svart","schwarz",7],["en säng","ein Bett",7],["en sänglampa","eine Nachttischlampe",7],
+  ["en tröja","ein Pullover",7],["tyvärr","leider",7],["utan","ohne",7],
+  ["verkligen","wirklich",7],["vet","weiß (kennen)",7],["ett ögonblick","ein Augenblick",7],
+  // KAP 8
+  ["en aktivitet","eine Aktivität",8],["badar","badet",8],["behöver","braucht",8],
+  ["blåser","weht",8],["bokar","bucht",8],["borde","sollte",8],
+  ["ett datum","ein Datum",8],["dimma","Nebel",8],["fantastisk","fantastisch",8],
+  ["får","darf / bekommt",8],["en födelsedag","ein Geburtstag",8],["ett fönster","ein Fenster",8],
+  ["försöker","versucht",8],["en grad","ein Grad",8],["Grattis!","Herzlichen Glückwunsch!",8],
+  ["gummistövlar","Gummistiefel",8],["hinner","schafft es rechtzeitig",8],["hoppar","springt / hüpft",8],
+  ["hoppas","hofft",8],["hos","bei",8],["håller med","stimmt zu",8],
+  ["härlig","herrlich / wunderbar",8],["kall","kalt",8],["en kille","ein Kerl / Junge",8],
+  ["en konsert","ein Konzert",8],["konstig","komisch / seltsam",8],["köttbullar","Fleischklößchen",8],
+  ["lingonsylt","Preiselbeerkonfitüre",8],["ett liv","ein Leben",8],["missar","verpasst",8],
+  ["modig","mutig",8],["molnig","bewölkt",8],["mulen","bedeckt / trüb",8],
+  ["ett myggmedel","ein Mückenmittel",8],["norr","Norden",8],["ofta","oft",8],
+  ["orkar","hat die Kraft / schafft es",8],["packar","packt",8],["planerar","plant",8],
+  ["en plats","ein Platz",8],["en plusgrad","ein Grad plus",8],["potatismos","Kartoffelpüree",8],
+  ["en present","ein Geschenk",8],["en prinsesstårta","eine Prinzesstorte",8],["på förmiddagen","am Vormittag",8],
+  ["ett regn","ein Regen",8],["regnar","regnet",8],["en regnjacka","eine Regenjacke",8],
+  ["en resa","eine Reise",8],["ett rum","ein Zimmer",8],["rädd","ängstlich / verängstigt",8],
+  ["röker","raucht",8],["sjunger","singt",8],["skiner","scheint",8],
+  ["en skärgård","ein Schärengarten",8],["snart","bald",8],["snö","Schnee",8],
+  ["snöar","schneit",8],["solig","sonnig",8],["sparar","spart",8],
+  ["spännande","spannend",8],["ett ställe","ein Ort / eine Stelle",8],["söder","Süden",8],
+  ["en temperatur","eine Temperatur",8],["en timme","eine Stunde",8],["tränar","trainiert",8],
+  ["underbar","wunderbar",8],["varm","warm",8],["en väderprognos","eine Wettervorhersage",8],
+  ["åskar","gewittert",8],["övar","übt",8],["överallt","überall",8],
+  // KAP 9
+  ["ett bageri","eine Bäckerei",9],["betalar","bezahlt",9],["bredvid","neben",9],
+  ["byter","wechselt / tauscht",9],["cyklar","fährt Fahrrad",9],["ett dopp","ein Tauchgang / Bad",9],
+  ["dyr","teuer",9],["enkel","einfach",9],["festar","feiert",9],
+  ["finns","gibt es",9],["en fisk","ein Fisch",9],["ett fjäll","ein Gebirge",9],
+  ["ett flyg","ein Flug",9],["en flygplats","ein Flughafen",9],["en fot","ein Fuß",9],
+  ["frisk","gesund / frisch",9],["en färja","eine Fähre",9],["färsk","frisch",9],
+  ["försenad","verspätet",9],["ett förslag","ein Vorschlag",9],["gata","Straße",9],
+  ["en glass","ein Eis",9],["hemifrån","von zuhause",9],["en hiss","ein Aufzug",9],
+  ["hungrig","hungrig",9],["en huvudstad","eine Hauptstadt",9],["en hållplats","eine Haltestelle",9],
+  ["i morse","heute Morgen",9],["en karta","eine Karte",9],["kopplar av","entspannt sich",9],
+  ["en korsning","eine Kreuzung",9],["en kust","eine Küste",9],["en kvart","eine Viertelstunde",9],
+  ["en kyrka","eine Kirche",9],["laddar ner","lädt herunter",9],["ett landskap","eine Landschaft",9],
+  ["luft","Luft",9],["en moské","eine Moschee",9],["mysig","gemütlich",9],
+  ["en månad","ein Monat",9],["en nyhet","eine Neuigkeit",9],["nära","nah",9],
+  ["nästa","nächste(r/s)",9],["en park","ein Park",9],["ett pendeltåg","eine S-Bahn",9],
+  ["en promenad","ein Spaziergang",9],["rakt fram","geradeaus",9],["redan","schon / bereits",9],
+  ["en räka","eine Krabbe",9],["sand","Sand",9],["en semester","ein Urlaub",9],
+  ["shoppar","shoppt",9],["en sjö","ein See",9],["en skoaffär","ein Schuhgeschäft",9],
+  ["en storstad","eine Großstadt",9],["en strand","ein Strand",9],["en synagoga","eine Synagoge",9],
+  ["ett tempel","ein Tempel",9],["tidigt","früh",9],["en tunnelbana","eine U-Bahn",9],
+  ["en tå","eine Zehe",9],["ett tåg","ein Zug",9],["ett tält","ein Zelt",9],
+  ["ungefär","ungefähr",9],["utanför","außerhalb / draußen",9],["en utsikt","eine Aussicht",9],
+  ["en vagn","ein Wagen / Waggon",9],["en våning","ein Stockwerk / eine Etage",9],["väntar","wartet",9],
+  ["en älskling","ein Schatz / Liebling",9],["en ö","eine Insel",9],["ett övergångsställe","ein Zebrastreifen",9],
+  // KAP 10
+  ["alla","alle",10],["andra","andere",10],["använder","benutzt",10],
+  ["en artist","ein Künstler",10],["bara","nur",10],["en befolkning","eine Bevölkerung",10],
+  ["behöver","braucht",10],["ett berg","ein Berg",10],["en blandning","eine Mischung",10],
+  ["en bokstav","ein Buchstabe",10],["bredvid","neben",10],["båda","beide",10],
+  ["en del","ein Teil",10],["därför","deshalb",10],["enkel","einfach",10],
+  ["en EU-medborgare","ein EU-Bürger",10],["fattig","arm",10],["ett fjäll","ein Gebirge",10],
+  ["en flykting","ein Flüchtling",10],["flyttar","zieht um",10],["först","zuerst",10],
+  ["försöker","versucht",10],["ganska","ziemlich",10],["en gräns","eine Grenze",10],
+  ["gullig","süß / niedlich",10],["en halvö","eine Halbinsel",10],["hemsk","schrecklich",10],
+  ["en huvudstad","eine Hauptstadt",10],["högutbildad","hochgebildet",10],["hör","hört",10],
+  ["en invånare","ein Einwohner",10],["en kommun","eine Gemeinde",10],["konstig","seltsam",10],
+  ["känd","bekannt",10],["känner","kennt / fühlt",10],["en lastbil","ein Lastwagen",10],
+  ["lever","lebt",10],["ligger","liegt",10],["en människa","ein Mensch",10],
+  ["nästan","fast",10],["platt","flach",10],["plockar","pflückt / sammelt",10],
+  ["rätt","richtig",10],["samtidigt","gleichzeitig",10],["en sjö","ein See",10],
+  ["en skog","ein Wald",10],["slutar","endet",10],["ett språk","eine Sprache",10],
+  ["stannar","bleibt / hält an",10],["ett stål","ein Stahl",10],["stängd","geschlossen",10],
+  ["svår","schwer",10],["söker asyl","sucht Asyl",10],["sötvatten","Süßwasser",10],
+  ["tiotusentals","zehntausende",10],["tätbefolkad","dicht besiedelt",10],["ungefär","ungefähr",10],
+  ["ett ursprungsfolk","ein Ursprungsvolk",10],["utanför","außerhalb",10],["en utbytesstudent","ein Austauschstudent",10],
+  ["utomlands","im Ausland",10],["utvecklar","entwickelt",10],["varandra","einander",10],
+  ["ett vattendrag","ein Gewässer",10],["verkligen","wirklich",10],["vet","weiß",10],
+  ["viktig","wichtig",10],["en yta","eine Fläche",10],["ändrar","ändert",10],
+  ["även","auch",10],["en ö","eine Insel",10],["öppnar","öffnet",10],
+  // KAP 11
+  ["annars","sonst / andernfalls",11],["berättar","erzählt",11],["bjuder hem","lädt nach Hause ein",11],
+  ["en dator","ein Computer",11],["ett djur","ein Tier",11],["duktig","tüchtig / gut",11],
+  ["ensam","allein / einsam",11],["faktiskt","eigentlich / tatsächlich",11],["en frys","ein Gefrierschrank",11],
+  ["frånskild","geschieden",11],["fungerar","funktioniert",11],["fyller år","hat Geburtstag",11],
+  ["får","darf / bekommt",11],["följer","folgt",11],["förbjuden","verboten",11],
+  ["en förklaring","eine Erklärung",11],["förstås","natürlich / selbstverständlich",11],["förut","früher / vorher",11],
+  ["ganska","ziemlich",11],["glömmer","vergisst",11],["gullig","süß / niedlich",11],
+  ["en gång","ein Mal",11],["en gård","ein Hof",11],["hittar","findet",11],
+  ["hoppas","hofft",11],["händer","passiert / geschieht",11],["hänger","hängt",11],
+  ["härlig","herrlich",11],["en idé","eine Idee",11],["en inbjudan","eine Einladung",11],
+  ["ingenting","nichts",11],["ett intresse","ein Interesse",11],["klickar","klickt",11],
+  ["kör","fährt",11],["ett körkort","ein Führerschein",11],["leker","spielt",11],
+  ["ett ljud","ein Geräusch / Ton",11],["ljuger","lügt",11],["loggar in","loggt ein",11],
+  ["lånar","leiht",11],["en lägenhet","eine Wohnung",11],["lämnar tillbaka","gibt zurück",11],
+  ["en länk","ein Link",11],["en löpning","ein Lauf",11],["ett lösenord","ein Passwort",11],
+  ["en nybörjarkurs","ein Anfängerkurs",11],["en papperskorg","ein Papierkorb",11],["en partner","ein Partner",11],
+  ["ett pälsdjur","ein Pelztier",11],["rolig","lustig",11],["saknar","vermisst / fehlt",11],
+  ["en skrivare","ein Drucker",11],["skriver ut","druckt aus",11],["en skärm","ein Bildschirm",11],
+  ["en snygging","ein Hübscher (ugs.)",11],["startar om","startet neu",11],["ett streck","ein Strich",11],
+  ["stänger","schließt",11],["säljer","verkauft",11],["sätter på","macht an",11],
+  ["en tavla","ein Gemälde / Bild",11],["en tidning","eine Zeitung",11],["tillbaka","zurück",11],
+  ["tipsar","tippt / gibt Tipps",11],["trasig","kaputt / defekt",11],["trevlig","nett / angenehm",11],
+  ["trist","traurig / deprimierend",11],["tråkig","langweilig",11],["tvättar","wäscht",11],
+  ["ett uteliv","ein Nachtleben",11],["en utställning","eine Ausstellung",11],["en väg","ein Weg",11],
+  // KAP 12
+  ["alkoholfri","alkoholfrei",12],["använder","benutzt",12],["beställer","bestellt",12],
+  ["ett blåbär","eine Heidelbeere",12],["en bondgård","ein Bauernhof",12],["ett bröd","ein Brot",12],
+  ["ett bröllop","eine Hochzeit",12],["en dryck","ein Getränk",12],["eftersom","weil / da",12],
+  ["en favoriträtt","ein Lieblingsgericht",12],["fläsk","Schweinefleisch",12],["fryst","gefroren / tiefgekühlt",12],
+  ["en fågel","ein Vogel",12],["färsk","frisch",12],["handlar","kauft ein",12],
+  ["hemlagad","hausgemacht",12],["en hundring","ein Hunderter (100 kr)",12],["en husmanskost","Hausmannskost",12],
+  ["en huvudrätt","ein Hauptgericht",12],["hämtmat","Essen zum Mitnehmen",12],["hög","hoch",12],
+  ["ingår","ist inbegriffen",12],["inlagd","eingelegt",12],["inte förrän","erst wenn / nicht bevor",12],
+  ["en jordgubbe","eine Erdbeere",12],["kallas","wird genannt",12],["ett knäckebröd","ein Knäckebrot",12],
+  ["en korv","eine Wurst",12],["ledsen","traurig",12],["en lukt","ein Geruch",12],
+  ["en matlagning","ein Kochen",12],["en maträtt","ein Gericht",12],["mjuk","weich",12],
+  ["mogen","reif",12],["passar","passt",12],["plockar","pflückt",12],
+  ["rak","gerade / direkt",12],["en rotfrukt","eine Rübe / Wurzelgemüse",12],["en råvara","ein Rohstoff / Grundzutat",12],
+  ["räknar","zählt / rechnet",12],["sen","spät / dann",12],["sista","letzte(r/s)",12],
+  ["själv","selbst / allein",12],["ett skafferi","eine Speisekammer",12],["ett skaldjur","ein Meeresfrüchte",12],
+  ["smakar","schmeckt",12],["en smula","ein Krümel / ein bisschen",12],["stark","stark",12],
+  ["ett ställe","ein Ort",12],["sugen på","Lust auf",12],["en svamp","ein Pilz",12],
+  ["sylt","Marmelade",12],["säger","sagt",12],["sänker","senkt",12],
+  ["tackar","dankt",12],["ett torg","ein Marktplatz",12],["torkar","trocknet",12],
+  ["tror","glaubt / denkt",12],["tunn","dünn",12],["tycker","findet / meint",12],
+  ["tyvärr","leider",12],["ungefär","ungefähr",12],["vanlig","gewöhnlich / normal",12],
+  ["varje","jeder",12],["ett vete","ein Weizen",12],["en vinter","ein Winter",12],
+  ["väger","wiegt",12],["en värme","eine Wärme",12],["växer","wächst",12],
+  ["en åsikt","eine Meinung",12],["äcklig","ekelig",12],["även","auch",12],
+  // KAP 13
+  ["en arbetsdag","ein Arbeitstag",13],["en arbetsuppgift","eine Arbeitsaufgabe",13],["behöver","braucht",13],
+  ["bifogar","hängt an / fügt bei",13],["en bilmekaniker","ein Automechaniker",13],["bredvid","neben",13],
+  ["bråkar","streitet / macht Ärger",13],["byter","wechselt",13],["dammsuger","staubsaugt",13],
+  ["en dessert","ein Dessert / Nachtisch",13],["diskar","spült ab",13],["dukar","deckt den Tisch",13],
+  ["ensam","allein",13],["fortsätter","macht weiter",13],["framme","angekommen / vorne",13],
+  ["ett företag","ein Unternehmen",13],["en förmiddag","ein Vormittag",13],["en förskollärare","ein Erzieher",13],
+  ["försover sig","verschläft sich",13],["genom","durch",13],["gissar","rät",13],
+  ["en gäst","ein Gast",13],["en helg","ein Wochenende",13],["hinner","schafft es",13],
+  ["hjälper","hilft",13],["hämtar","holt ab",13],["händig","handwerklich begabt",13],
+  ["i förrgår","vorgestern",13],["i morse","heute Morgen",13],["konstig","seltsam",13],
+  ["en konstnär","ein Künstler",13],["kreativ","kreativ",13],["en kund","ein Kunde",13],
+  ["ledig","frei / im Urlaub",13],["en lista","eine Liste",13],["en lägenhet","eine Wohnung",13],
+  ["lämnar","verlässt / lässt",13],["magisk","magisch",13],["en medarbetare","ein Mitarbeiter",13],
+  ["en middag","ein Abendessen",13],["nervös","nervös",13],["noggrann","genau / sorgfältig",13],
+  ["ett norrsken","ein Nordlicht",13],["ett par","ein Paar",13],["en park","ein Park",13],
+  ["ett projekt","ein Projekt",13],["en saga","ein Märchen",13],["en sak","eine Sache",13],
+  ["ser","sieht",13],["själv","selbst",13],["en skida","ein Ski",13],
+  ["skyndar sig","beeilt sich",13],["snabb","schnell",13],["en snickare","ein Tischler / Zimmermann",13],
+  ["social","gesellig / sozial",13],["stark","stark",13],["stressig","stressig",13],
+  ["står","steht",13],["städar","putzt / räumt auf",13],["en tidning","eine Zeitung",13],
+  ["tillsammans","zusammen",13],["trivs","fühlt sich wohl",13],["en trädgårdsmästare","ein Gärtner",13],
+  ["under","unter / während",13],["undrar","fragt sich / wundert sich",13],["en uppsats","ein Aufsatz",13],
+  ["vaknar","wacht auf",13],["vandrar","wandert",13],["varandra","einander",13],
+  ["väntar","wartet",13],["en växt","eine Pflanze",13],["ett yrke","ein Beruf",13],
+  // KAP 14
+  ["barfota","barfuß",14],["ett blåbär","eine Heidelbeere",14],["blåser","weht",14],
+  ["en bottenvåning","ein Erdgeschoss",14],["en båt","ein Boot",14],["en dröm","ein Traum",14],
+  ["en dörr","eine Tür",14],["en efterrätt","ein Nachtisch",14],["faktiskt","tatsächlich",14],
+  ["en fantasi","eine Fantasie",14],["firar","feiert",14],["ett fritidshus","ein Ferienhaus",14],
+  ["fryser","friert",14],["en färja","eine Fähre",14],["före","vor / bevor",14],
+  ["förlåt","Entschuldigung / Verzeihung",14],["ett försäkringsbolag","eine Versicherung",14],["förut","früher",14],
+  ["gifter sig","heiratet",14],["gissar","rät",14],["glittrar","glitzert",14],
+  ["glömmer","vergisst",14],["en granne","ein Nachbar",14],["grillar","grillt",14],
+  ["ett gräs","ein Gras",14],["ett hav","ein Meer",14],["en helg","ein Wochenende",14],
+  ["hugger","hackt",14],["ifall","falls",14],["en inbjudan","eine Einladung",14],
+  ["jobbig","anstrengend / mühsam",14],["jämför","vergleicht",14],["en kavaj","ein Sakko",14],
+  ["klipper","schneidet",14],["en kopp","eine Tasse",14],["kvar","übrig / noch da",14],
+  ["luktar","riecht",14],["medan","während",14],["missar","verpasst",14],
+  ["en mås","eine Möwe",14],["naken","nackt",14],["orkar","hat die Kraft",14],
+  ["parkerar","parkt",14],["plockar","pflückt",14],["regnar","regnet",14],
+  ["ropar","ruft",14],["en rygg","ein Rücken",14],["röd","rot",14],
+  ["sitter","sitzt",14],["skiner","scheint",14],["skjuter","schießt",14],
+  ["skriker","schreit",14],["Skål!","Prost! / Auf dein Wohl!",14],["en skärgård","ein Schärengarten",14],
+  ["en släkting","ein Verwandter",14],["snygg","schick / hübsch",14],["ett snöre","eine Schnur",14],
+  ["solar","sonnt sich",14],["spelar","spielt",14],["spännande","spannend",14],
+  ["en stund","eine Weile",14],["sur","sauer",14],["trots att","obwohl",14],
+  ["tvättar","wäscht",14],["valfri","optional / nach Wahl",14],["varannan","jede zweite(r/s)",14],
+  ["verkligen","wirklich",14],["vilar","ruht sich aus",14],["vänlig","freundlich",14],
+  ["en älg","ein Elch",14],["äntligen","endlich",14],["över","über / vorbei",14],
+  // KAP 15
+  ["1800-talet","das 19. Jahrhundert",15],["använder","benutzt",15],["ett berg","ein Berg",15],
+  ["beskriver","beschreibt",15],["bredvid","neben",15],["en bubbla","eine Blase",15],
+  ["en by","ein Dorf",15],["ett datum","ein Datum",15],["döper","tauft",15],
+  ["ett efternamn","ein Nachname",15],["egentligen","eigentlich",15],["ensam","allein",15],
+  ["en flygplats","ein Flughafen",15],["en frys","ein Gefrierschrank",15],["en födelsedag","ein Geburtstag",15],
+  ["ett förnamn","ein Vorname",15],["försvinner","verschwindet",15],["förvånad","erstaunt",15],
+  ["golv","Fußboden",15],["en gran","eine Fichte / Tanne",15],["en hamster","ein Hamster",15],
+  ["hjälper","hilft",15],["hänger","hängt",15],["en idrottare","ein Sportler",15],
+  ["ingenting","nichts",15],["en invånare","ein Einwohner",15],["kallar","nennt",15],
+  ["klättrar","klettert",15],["en kommun","eine Gemeinde",15],["känns","fühlt sich an",15],
+  ["ledig","frei",15],["en leksak","ein Spielzeug",15],["ett ljud","ein Geräusch",15],
+  ["ett ljus","ein Licht / eine Kerze",15],["en lägenhet","eine Wohnung",15],["matar","füttert",15],
+  ["minns","erinnert sich",15],["missförstår","missversteht",15],["myser","kuschelt",15],
+  ["märker","bemerkt",15],["mörk","dunkel",15],["nuförtiden","heutzutage",15],
+  ["en nyckel","ein Schlüssel",15],["någonting","etwas",15],["okänd","unbekannt",15],
+  ["ovanlig","ungewöhnlich",15],["en papegoja","ein Papagei",15],["en parkering","ein Parkplatz",15],
+  ["en plats","ein Platz",15],["redan","schon",15],["självständig","selbständig",15],
+  ["en skog","ein Wald",15],["skrattar","lacht",15],["en släkting","ein Verwandter",15],
+  ["ett smeknamn","ein Spitzname",15],["småpratar","plaudert",15],["en spårvagn","eine Straßenbahn",15],
+  ["stannar","bleibt",15],["en sten","ein Stein",15],["en strand","ein Strand",15],
+  ["ställer","stellt",15],["suckar","seufzt",15],["synd","schade",15],
+  ["säker","sicher",15],["tappar","lässt fallen / verliert",15],["en tavla","ein Bild",15],
+  ["tidig","früh",15],["tyst","still / leise",15],["vandrar","wandert",15],
+  ["vattnar","gießt (Pflanzen)",15],["verkligen","wirklich",15],["väljer","wählt",15],
+  // KAP 16
+  ["antecknar","notiert",16],["ett arbetsliv","ein Arbeitsleben",16],["en arbetsplats","ein Arbeitsplatz",16],
+  ["bestämmer","bestimmt / entscheidet",16],["betalar","bezahlt",16],["ett betyg","eine Note",16],
+  ["bredvid","neben",16],["en diskussion","eine Diskussion",16],["duktig","tüchtig",16],
+  ["efteråt","danach",16],["egentligen","eigentlich",16],["en folkhögskola","eine Volkshochschule",16],
+  ["en framtid","eine Zukunft",16],["ett fritids","ein Freizeitzentrum",16],["färdig","fertig",16],
+  ["en föreläsning","eine Vorlesung",16],["förklarar","erklärt",16],["gratis","kostenlos",16],
+  ["hoppar av","steigt aus / gibt auf",16],["en högskola","eine Hochschule",16],["i början","am Anfang",16],
+  ["i genomsnitt","im Durchschnitt",16],["innehåller","enthält",16],["en klasskompis","ein Klassenkamerad",16],
+  ["kostnadsfri","kostenlos",16],["lånar","leiht",16],["lär sig","lernt",16],
+  ["en möjlighet","eine Möglichkeit",16],["en nivå","ein Niveau",16],["nästa","nächste",16],
+  ["obligatorisk","obligatorisch / pflichtmäßig",16],["olika","verschiedene",16],["ordning","Ordnung",16],
+  ["orkar","hat die Kraft",16],["orättvis","ungerecht",16],["peppar","motiviert",16],
+  ["pluggar","lernt",16],["ett prov","eine Prüfung",16],["reser","reist",16],
+  ["riktig","richtig",16],["rädd","ängstlich",16],["räknar","rechnet",16],
+  ["samhällskunskap","Gemeinschaftskunde",16],["sitter stilla","sitzt still",16],["sjunger","singt",16],
+  ["skolkar","schwänzt",16],["en slöfock","ein Faulenzer",16],["springer","rennt",16],
+  ["spännande","spannend",16],["sträng","streng",16],["svår","schwer",16],
+  ["särskilt","besonders",16],["söker","sucht",16],["en termin","ein Semester / Schulhalbjahr",16],
+  ["tillbaka","zurück",16],["en tonåring","ein Teenager",16],["en tredjedel","ein Drittel",16],
+  ["en trumma","eine Trommel",16],["en tröja","ein Pullover",16],["typisk","typisch",16],
+  ["tänker","denkt",16],["ungefär","ungefähr",16],["en uppgift","eine Aufgabe",16],
+  ["ett uttryck","ein Ausdruck",16],["varannan","jede zweite",16],["viktig","wichtig",16],
+  ["väldigt","sehr",16],["en ålder","ein Alter",16],["en årskurs","eine Klasse / Jahrgangsstufe",16],
+  ["älskar","liebt",16],["ett ämne","ein Fach / Thema",16],["en översättare","ein Übersetzer",16],
+  // KAP 17
+  ["en affisch","ein Poster / Plakat",17],["antecknar","notiert",17],["ett arbetsrum","ein Arbeitszimmer",17],
+  ["ett badkar","eine Badewanne",17],["bakom","hinter",17],["en bastu","eine Sauna",17],
+  ["en bokhylla","ein Bücherregal",17],["en bostad","eine Wohnung / Unterkunft",17],["en bostadsrätt","eine Eigentumswohnung",17],
+  ["ett bud","ein Gebot",17],["bygger","baut",17],["egen","eigen",17],
+  ["eldar","macht Feuer / befeuert",17],["fräsch","frisch / erfrischend",17],["funderar","überlegt / grübelt",17],
+  ["en fåtölj","ein Sessel",17],["en färg","eine Farbe",17],["förbereder","bereitet vor",17],
+  ["en fördel","ein Vorteil",17],["en förening","ein Verein",17],["en förort","ein Vorort",17],
+  ["ett förråd","ein Abstellraum",17],["ett förstahandskontrakt","ein Direktmietvertrag",17],["en gardin","ein Vorhang",17],
+  ["gemensam","gemeinsam",17],["gigantisk","riesig",17],["ett golv","ein Fußboden",17],
+  ["en granne","ein Nachbar",17],["en gräsklippare","ein Rasenmäher",17],["en hyresrätt","eine Mietwohnung",17],
+  ["hållbar","nachhaltig / haltbar",17],["hänger","hängt",17],["en högtalare","ein Lautsprecher",17],
+  ["ett hörn","eine Ecke",17],["inomhus","drinnen / innen",17],["en kompost","ein Kompost",17],
+  ["en korridor","ein Flur / Korridor",17],["en krukväxt","eine Topfpflanze",17],["en kudde","ein Kissen",17],
+  ["en kvadratmeter","ein Quadratmeter",17],["ett kylskåp","ein Kühlschrank",17],["en källare","ein Keller",17],
+  ["ett köksskåp","ein Küchenschrank",17],["letar","sucht",17],["ett lånelöfte","eine Kreditzusage",17],
+  ["ett matbord","ein Esstisch",17],["en matta","ein Teppich",17],["en månadsavgift","eine Monatsgebühr",17],
+  ["en mäklare","ein Makler",17],["en nackdel","ein Nachteil",17],["nyrenoverad","neu renoviert",17],
+  ["pendlar","pendelt",17],["pigg","frisch / munter",17],["pysslar","bastelt / beschäftigt sich",17],
+  ["ett radhus","ein Reihenhaus",17],["renoverar","renoviert",17],["sambo","Lebenspartner (unverheiratet)",17],
+  ["en skrivbordslampa","eine Schreibtischlampe",17],["ett skåp","ein Schrank",17],["snygg","schick",17],
+  ["ett soffbord","ein Couchtisch",17],["sparar","spart",17],["en spis","ein Herd",17],
+  ["spännande","spannend",17],["särbo","Fernbeziehung (Partnerschaft)",17],["ett tak","ein Dach / eine Decke",17],
+  ["en taklampa","eine Deckenlampe",17],["en trädgård","ein Garten",17],["en tvättstuga","ein Waschraum",17],
+  ["en uteplats","ein Außenbereich / Terrasse",17],["ett vardagsrum","ein Wohnzimmer",17],["en visning","eine Besichtigung",17],
+  // KAP 18
+  ["annars","sonst",18],["en anställning","eine Anstellung",18],["en apparat","ein Gerät",18],
+  ["en arbetsgivare","ein Arbeitgeber",18],["en avdelning","eine Abteilung",18],["ett betalkort","eine Bankkarte",18],
+  ["bjuder","lädt ein",18],["drar","zieht",18],["en fjärrkontroll","eine Fernbedienung",18],
+  ["en fortbildning","eine Fortbildung",18],["en förkortning","eine Abkürzung",18],["ett förråd","ein Abstellraum",18],
+  ["föräldraledig","in Elternzeit",18],["en förändring","eine Veränderung",18],["gnäller","meckert / jammert",18],
+  ["grädde","Sahne",18],["hemlig","geheim",18],["häller","gießt",18],
+  ["härlig","herrlich",18],["hörlurar","Kopfhörer",18],["ett hörn","eine Ecke",18],
+  ["en kabel","ein Kabel",18],["en kanna","eine Kanne",18],["en karriär","eine Karriere",18],
+  ["en knapp","ein Knopf",18],["kommer på besök","kommt zu Besuch",18],["kontaktuppgifter","Kontaktdaten",18],
+  ["kopplar in","schließt an",18],["krattar","harkt",18],["en kundtjänst","ein Kundendienst",18],
+  ["en ledighet","ein freier Tag / Urlaub",18],["en ledighetsansökan","ein Urlaubsantrag",18],["en lön","ein Gehalt",18],
+  ["ett lösenord","ein Passwort",18],["en mall","eine Vorlage",18],["ett meddelande","eine Nachricht",18],
+  ["missar","verpasst",18],["en myndighet","eine Behörde",18],["nedanför","unterhalb",18],
+  ["omkring","ungefähr / um … herum",18],["planerar","plant",18],["ett protokoll","ein Protokoll",18],
+  ["ett påstående","eine Aussage / Behauptung",18],["ett samtal","ein Gespräch / Anruf",18],["sjuk","krank",18],
+  ["en sjukdom","eine Krankheit",18],["skickar","schickt / sendet",18],["en soffa","ein Sofa",18],
+  ["en spelutvecklare","ein Spieleentwickler",18],["statlig","staatlich",18],["stirrar","starrt",18],
+  ["en strumpa","eine Socke",18],["stänger av","schaltet aus",18],["ett stödord","ein Stichwort",18],
+  ["stör","stört",18],["sätter på","macht an",18],["tappar","lässt fallen",18],
+  ["tjänar","verdient",18],["trycker","drückt",18],["tråkig","langweilig",18],
+  ["tydlig","deutlich / klar",18],["undrar","fragt sich",18],["en utbildning","eine Ausbildung",18],
+  ["en utsikt","eine Aussicht",18],["uttalar","spricht aus",18],["vabbar","bleibt wegen Kind zuhause",18],
+  ["en vaktmästare","ein Hausmeister",18],["vanlig","gewöhnlich",18],["en vikarie","ein Vertretungslehrer",18],
+  ["viktig","wichtig",18],["en vägg","eine Wand",18],["ett ögonblick","ein Augenblick",18],
+  // KAP 19
+  ["andas","atmet",19],["en armbåge","ein Ellenbogen",19],["en axel","eine Schulter",19],
+  ["blinkar","blinkt",19],["ett bröst","eine Brust",19],["en dosa","eine Dose / Büchse",19],
+  ["dygnar","dauert Tag und Nacht",19],["en tå","eine Zehe",19],["en febertermometer","ein Fieberthermometer",19],
+  ["framför","vor",19],["en förkylning","eine Erkältung",19],["ett förslag","ein Vorschlag",19],
+  ["går över","geht vorbei",19],["en haka","ein Kinn",19],["en hals","ein Hals",19],
+  ["har ont","hat Schmerzen",19],["hostar","hustet",19],["en huvudvärkstablett","eine Kopfschmerztablette",19],
+  ["ett hår","ein Haar",19],["en häl","eine Ferse",19],["en kind","eine Wange",19],
+  ["ett knä","ein Knie",19],["kräks","erbricht sich",19],["känner sig","fühlt sich",19],
+  ["en lugg","ein Pony (Haare)",19],["ett lår","ein Oberschenkel",19],["en läpp","eine Lippe",19],
+  ["en mage","ein Bauch / Magen",19],["en mardröm","ein Alptraum",19],["en midja","eine Taille",19],
+  ["mysig","gemütlich",19],["mår illa","ist übelkeit",19],["en nacke","ein Nacken",19],
+  ["ett näsblod","ein Nasenbluten",19],["en näsborre","ein Nasenloch",19],["ordentligt","ordentlich / richtig",19],
+  ["en patient","ein Patient",19],["pekar","zeigt (auf etwas)",19],["en rumpa","ein Po / Hintern",19],
+  ["en rygg","ein Rücken",19],["ett samtal","ein Gespräch",19],["skrattar","lacht",19],
+  ["ett skägg","ein Bart",19],["ett slem","ein Schleim",19],["smittar","steckt an",19],
+  ["snusar","schnupft Tabak",19],["snuvig","verschnupft",19],["snyter sig","schnäuzt sich",19],
+  ["stel","steif",19],["en stjärt","ein Hintern / Schwanz",19],["en stund","eine Weile",19],
+  ["städar","putzt",19],["svettas","schwitzt",19],["ett symtom","ein Symptom",19],
+  ["ett syskon","ein Geschwister",19],["säker","sicher",19],["sömnig","schläfrig",19],
+  ["en tablett","eine Tablette",19],["en tand","ein Zahn",19],["tidig","früh",19],
+  ["tillbaka","zurück",19],["tredje","dritte(r/s)",19],["en upplevelse","ein Erlebnis",19],
+  ["varannan","jede zweite",19],["verkar","scheint / wirkt",19],["verkligen","wirklich",19],
+  ["vilar","ruht sich aus",19],["yr","schwindelig",19],["ett öga","ein Auge",19],
+  ["ett ögonbryn","eine Augenbraue",19],["en ögonfrans","eine Wimper",19],["ett ögonlock","ein Augenlid",19],
+  // KAP 20
+  ["annorlunda","anders",20],["en anställd","ein Angestellter",20],["ett aprilväder","Aprilwetter",20],
+  ["en arbetslöshet","eine Arbeitslosigkeit",20],["bedömer","beurteilt",20],["beror","hängt ab",20],
+  ["berättar","erzählt",20],["biter","beißt",20],["blåsig","windig",20],
+  ["bygger","baut",20],["en byggnad","ein Gebäude",20],["cirka","circa / ungefähr",20],
+  ["demonstrerar","demonstriert",20],["det fattas","es fehlt",20],["ett dike","ein Graben",20],
+  ["en dryck","ein Getränk",20],["enligt","laut / gemäß",20],["fortsätter","macht weiter",20],
+  ["ett fynd","ein Fund / Schnäppchen",20],["färsk","frisch",20],["en föreställning","eine Vorstellung",20],
+  ["ett företag","ein Unternehmen",20],["förvånande","erstaunlich",20],["hämtar","holt",20],
+  ["en kamp","ein Kampf",20],["ett kaos","ein Chaos",20],["krockar","kollidiert",20],
+  ["kryper","kriecht",20],["en kund","ein Kunde",20],["en kö","eine Warteschlange",20],
+  ["meddelar","teilt mit",20],["modig","mutig",20],["ett moln","eine Wolke",20],
+  ["ett monster","ein Monster",20],["nybakad","frisch gebacken",20],["en nyhet","eine Neuigkeit",20],
+  ["nöjd","zufrieden",20],["omväxlande","abwechslungsreich",20],["onyttig","ungesund",20],
+  ["onödig","unnötig",20],["otrevlig","unangenehm",20],["packar upp","packt aus",20],
+  ["regnig","regnerisch",20],["ett rekord","ein Rekord",20],["en resväska","ein Koffer",20],
+  ["river","reißt ab / reißt",20],["roar sig","hat Spaß",20],["en rubrik","eine Überschrift",20],
+  ["en ränta","ein Zins",20],["sammanfattar","fasst zusammen",20],["skadad","verletzt",20],
+  ["en skandal","ein Skandal",20],["en skjorta","ein Hemd",20],["snöig","verschneit",20],
+  ["solig","sonnig",20],["en spindel","eine Spinne",20],["stiger","steigt",20],
+  ["stjäl","stiehlt",20],["en stjärna","ein Stern",20],["stoppar","stoppt",20],
+  ["sätter sig","setzt sich",20],["trots","trotz",20],["undersöker","untersucht",20],
+  ["upptäcker","entdeckt",20],["en vinst","ein Gewinn",20],["en vår","ein Frühling",20],
+  ["väljer","wählt",20],["en ålder","ein Alter",20],["en årstid","eine Jahreszeit",20],
+  ["äger","besitzt",20],["ändrar sig","ändert sich",20],["en överraskning","eine Überraschung",20],
+];
+
+// ─── SRS ENGINE ───────────────────────────────────────────────────────────────
+// Levels: 0=new, 1=seen, 2=learnt, 3=mature, 4=strong, 5=mastered
+// Intervals (in "rounds"): 0→show always, 1→every2, 2→every3, 3→every5, 4→every8, 5→every13
+const INTERVALS = [1, 2, 3, 5, 8, 13];
+
+const STORAGE_KEY = 'rivstart_srs_v1';
+
+function loadState() {
+  try {
+    const s = localStorage.getItem(STORAGE_KEY);
+    return s ? JSON.parse(s) : {};
+  } catch { return {}; }
+}
+
+function saveState() {
+  try { 
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(srsState)); 
+    console.log('Progress saved:', Object.keys(srsState).length, 'cards, round:', srsState.__round);
+  } catch(e) {
+    console.error('Save failed:', e);
+    alert('Warnung: Fortschritt konnte nicht gespeichert werden. Bitte öffnen Sie die Datei über einen lokalen Webserver oder aktivieren Sie localStorage in Ihren Browser-Einstellungen.');
+  }
+}
+
+let srsState = loadState();
+let roundCounter = (srsState.__round) ? srsState.__round : 0;
+
+function getCard(idx) {
+  if (!srsState[idx]) srsState[idx] = { level: 0, nextRound: 0 };
+  return srsState[idx];
+}
+
+function isDue(idx) {
+  const c = getCard(idx);
+  return c.nextRound <= roundCounter;
+}
+
+function recordAnswer(idx, correct) {
+  const c = getCard(idx);
+  if (correct) {
+    c.level = Math.min(5, c.level + 1);
+  } else {
+    c.level = Math.max(0, c.level - 1);
+  }
+  c.nextRound = roundCounter + INTERVALS[c.level];
+  srsState[idx] = c;
+  saveState();
+}
+
+// ─── APP STATE ────────────────────────────────────────────────────────────────
+let allCards = RAW.map((r, i) => ({ id: i, sv: r[0], de: r[1], chapter: r[2] }));
+let activeChapters = new Set(Array.from({length: 20}, (_, i) => i + 1));
+let queue = [];
+let currentIdx = -1;
+let isFlipped = false;
+let sessionCorrect = 0;
+let sessionTotal = 0;
+
+// ─── QUEUE BUILDER ────────────────────────────────────────────────────────────
+function buildQueue() {
+  const filtered = allCards.filter(c => activeChapters.has(c.chapter));
+  // Prioritize due cards, then new cards, then scheduled
+  const due = filtered.filter(c => isDue(c.id));
+  // Shuffle due cards
+  for (let i = due.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [due[i], due[j]] = [due[j], due[i]];
+  }
+  queue = due;
+  currentIdx = 0;
+  return queue.length;
+}
+
+function nextCard() {
+  if (queue.length === 0 || currentIdx >= queue.length) {
+    showDone();
+    return;
+  }
+  const card = queue[currentIdx];
+  showCard(card);
+}
+
+// ─── UI ───────────────────────────────────────────────────────────────────────
+function showCard(card) {
+  const cardEl = document.getElementById('mainCard');
+  const wasFlipped = isFlipped;
+  isFlipped = false;
+
+  // Parse article from word (en/ett prefix)
+  let article = '';
+  let word = card.sv;
+  if (card.sv.startsWith('en ')) { article = 'en'; word = card.sv.slice(3); }
+  else if (card.sv.startsWith('ett ')) { article = 'ett'; word = card.sv.slice(4); }
+
+  const applyContent = () => {
+    document.getElementById('cardChapter').textContent = 'Kap. ' + card.chapter;
+    document.getElementById('cardChapterBack').textContent = 'Kap. ' + card.chapter;
+    document.getElementById('cardNum').textContent = (currentIdx + 1) + ' / ' + queue.length;
+    document.getElementById('cardArticle').textContent = article;
+    document.getElementById('cardWord').textContent = word;
+    document.getElementById('cardTranslation').textContent = card.de;
+    const c = getCard(card.id);
+    const levelNames = ['Neu','Gesehen','Gelernt','Gefestigt','Stark','Gemeistert'];
+    const srsEl = document.getElementById('srsInfo');
+    srsEl.textContent = levelNames[c.level];
+    srsEl.className = 'card-srs-info srs-level-' + c.level;
+  };
+
+  document.getElementById('flipBtns').style.display = 'flex';
+  document.getElementById('answerBtns').style.display = 'none';
+  document.getElementById('card-wrap').style.display = 'flex';
+  document.getElementById('doneScreen').style.display = 'none';
+
+  if (wasFlipped) {
+    // Card is currently showing back — flip to front first, then swap content
+    cardEl.classList.remove('flipped');
+    setTimeout(applyContent, 520);
+  } else {
+    applyContent();
+  }
+
+  updateStats();
+}
+
+function flipCard() {
+  isFlipped = !isFlipped;
+  document.getElementById('mainCard').classList.toggle('flipped', isFlipped);
+  if (isFlipped) {
+    document.getElementById('flipBtns').style.display = 'none';
+    document.getElementById('answerBtns').style.display = 'flex';
+  } else {
+    document.getElementById('flipBtns').style.display = 'flex';
+    document.getElementById('answerBtns').style.display = 'none';
+  }
+}
+
+function answer(correct) {
+  const card = queue[currentIdx];
+  recordAnswer(card.id, correct);
+  sessionTotal++;
+  if (correct) sessionCorrect++;
+  roundCounter++;
+  srsState.__round = roundCounter;
+  saveState();
+  currentIdx++;
+  nextCard();
+}
+
+function showDone() {
+  document.getElementById('card-wrap').style.display = 'none';
+  document.getElementById('flipBtns').style.display = 'none';
+  document.getElementById('answerBtns').style.display = 'none';
+  const done = document.getElementById('doneScreen');
+  done.style.display = 'flex';
+  const pct = sessionTotal > 0 ? Math.round(sessionCorrect / sessionTotal * 100) : 0;
+  document.getElementById('doneStats').innerHTML =
+    `${sessionCorrect} von ${sessionTotal} Karten richtig (${pct}%)<br><br>Die Karten werden je nach Leistung seltener oder öfter wiederholt.`;
+  updateStats();
+}
+
+function updateStats() {
+  const filtered = allCards.filter(c => activeChapters.has(c.chapter));
+  const total = filtered.length;
+  const mastered = filtered.filter(c => getCard(c.id).level >= 3).length;
+  const unknown = filtered.filter(c => getCard(c.id).level < 2).length;
+  const due = filtered.filter(c => isDue(c.id)).length;
+
+  document.getElementById('statTotal').textContent = total;
+  document.getElementById('statKnown').textContent = mastered;
+  document.getElementById('statUnknown').textContent = unknown;
+  document.getElementById('statDue').textContent = due;
+  document.getElementById('progressFill').style.width = total > 0 ? (mastered / total * 100) + '%' : '0%';
+
+  document.getElementById('queueInfo').textContent =
+    queue.length > 0
+      ? 'Karte ' + (currentIdx + 1) + ' von ' + queue.length + ' in dieser Runde'
+      : '';
+}
+
+// ─── CHAPTER FILTER ───────────────────────────────────────────────────────────
+function buildChapterFilter() {
+  const cf = document.getElementById('chapterFilter');
+  cf.innerHTML = '';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'ch-btn active';
+  allBtn.textContent = 'Alle';
+  allBtn.id = 'chAll';
+  allBtn.onclick = () => {
+    activeChapters = new Set(Array.from({length: 20}, (_, i) => i + 1));
+    document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
+    allBtn.classList.add('active');
+    restart();
+  };
+  cf.appendChild(allBtn);
+
+  for (let k = 1; k <= 20; k++) {
+    const btn = document.createElement('button');
+    btn.className = 'ch-btn';
+    btn.textContent = 'Kap. ' + k;
+    btn.dataset.ch = k;
+    btn.onclick = function() {
+      const ch = parseInt(this.dataset.ch);
+      // Single chapter click = exclusive selection (show ONLY this chapter)
+      activeChapters = new Set([ch]);
+      document.querySelectorAll('.ch-btn').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      restart();
+    };
+    cf.appendChild(btn);
+  }
+}
+
+// ─── CONTROLS ─────────────────────────────────────────────────────────────────
+function restart() {
+  sessionCorrect = 0;
+  sessionTotal = 0;
+  const n = buildQueue();
+  document.getElementById('doneScreen').style.display = 'none';
+  document.getElementById('card-wrap').style.display = 'flex';
+  if (n === 0) {
+    document.getElementById('queueInfo').textContent = 'Keine fälligen Karten – kommen Sie später wieder!';
+    showDone();
+  } else {
+    nextCard();
+  }
+}
+
+function shuffleDue() {
+  buildQueue();
+  nextCard();
+}
+
+function showOnlyDue() {
+  restart();
+}
+
+function showAll() {
+  // Reset all nextRound to 0 so everything is due
+  allCards.forEach(c => {
+    if (srsState[c.id]) srsState[c.id].nextRound = 0;
+  });
+  saveState();
+  restart();
+}
+
+function resetSession() {
+  restart();
+}
+
+function resetAll() {
+  srsState = {};
+  roundCounter = 0;
+  saveState();
+  restart();
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flipCard(); }
+  if (e.key === 'ArrowRight' || e.key === '1') { if (isFlipped) answer(true); }
+  if (e.key === 'ArrowLeft' || e.key === '2') { if (isFlipped) answer(false); }
+});
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+// Check if localStorage is available
+try {
+  localStorage.setItem('_test', '1');
+  localStorage.removeItem('_test');
+  console.log('LocalStorage available ✓');
+} catch(e) {
+  console.error('LocalStorage not available:', e);
+  alert('WARNUNG: Ihr Browser blockiert localStorage.\n\n' +
+        'Fortschritt kann nicht gespeichert werden!\n\n' +
+        'Lösung: Starten Sie einen lokalen Webserver oder öffnen Sie die Datei in einem anderen Browser.\n\n' +
+        'Chrome: python3 -m http.server 8000\nFirefox sollte funktionieren.');
+}
+
+// Mobile optimizations: prevent double-tap zoom on buttons
+let lastTouchEnd = 0;
+document.addEventListener('touchend', function(e) {
+  const now = Date.now();
+  if (now - lastTouchEnd <= 300) {
+    e.preventDefault();
+  }
+  lastTouchEnd = now;
+}, false);
+
+// Prevent iOS Safari bounce scroll
+document.body.addEventListener('touchmove', function(e) {
+  if (e.target === document.body) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+buildChapterFilter();
+restart();
+</script>
+
+</body>
+</html>
