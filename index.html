@@ -341,6 +341,94 @@
     color: var(--bg);
   }
 
+  /* BACKUP SECTION */
+  .backup-section {
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+  }
+
+  .backup-divider {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-align: center;
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+
+  .backup-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+  }
+
+  .backup-btn {
+    flex: 1;
+    max-width: 140px;
+    padding: 12px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .backup-btn .btn-icon {
+    font-size: 1.4rem;
+  }
+
+  .backup-btn .btn-text {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .export-btn:hover {
+    border-color: var(--accent2);
+    background: var(--accent2);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(42, 107, 79, 0.3);
+  }
+
+  .export-btn:hover .btn-text {
+    color: var(--bg);
+  }
+
+  .import-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(200, 71, 26, 0.3);
+  }
+
+  .import-btn:hover .btn-text {
+    color: var(--bg);
+  }
+
+  .reset-btn:hover {
+    border-color: var(--unknown);
+    background: var(--unknown);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(200, 71, 26, 0.3);
+  }
+
+  .reset-btn:hover .btn-text {
+    color: var(--bg);
+  }
+
+  .backup-btn:active {
+    transform: translateY(0);
+  }
+
   /* STATS BAR */
   .stats-bar {
     width: 100%;
@@ -1779,6 +1867,144 @@ document.addEventListener('click', (e) => {
   }
 });
 
+// ─── BACKUP & RESTORE ─────────────────────────────────────────────────────────
+function exportData() {
+  try {
+    const exportData = {
+      version: '1.0',
+      timestamp: new Date().toISOString(),
+      srsState: srsState,
+      customVocab: loadCustomVocab(),
+      theme: localStorage.getItem('theme') || 'light',
+      learningMode: learningMode,
+      activeChapters: Array.from(activeChapters),
+      roundCounter: roundCounter
+    };
+    
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const a = document.createElement('a');
+    a.href = url;
+    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+    a.download = `rivstart_backup_${timestamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    alert('✅ Backup erstellt!\n\nDatei wurde heruntergeladen.\nSpeichere sie sicher (z.B. in iCloud/Dropbox).');
+  } catch(e) {
+    console.error('Export failed:', e);
+    alert('❌ Export fehlgeschlagen:\n' + e.message);
+  }
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const importedData = JSON.parse(e.target.result);
+      
+      // Validate data
+      if (!importedData.version || !importedData.timestamp) {
+        throw new Error('Ungültige Backup-Datei');
+      }
+      
+      // Show confirmation with preview
+      const date = new Date(importedData.timestamp).toLocaleString('de-DE');
+      const customCount = importedData.customVocab ? importedData.customVocab.length : 0;
+      const srsCount = Object.keys(importedData.srsState || {}).length;
+      
+      const msg = `Backup importieren?\n\n` +
+                  `Erstellt: ${date}\n` +
+                  `Eigene Vokabeln: ${customCount}\n` +
+                  `SRS-Einträge: ${srsCount}\n\n` +
+                  `⚠️ Aktuelle Daten werden überschrieben!`;
+      
+      if (!confirm(msg)) {
+        event.target.value = ''; // Reset file input
+        return;
+      }
+      
+      // Import data
+      if (importedData.srsState) {
+        srsState = importedData.srsState;
+        saveState();
+      }
+      
+      if (importedData.customVocab) {
+        saveCustomVocab(importedData.customVocab);
+      }
+      
+      if (importedData.theme) {
+        localStorage.setItem('theme', importedData.theme);
+        if (importedData.theme === 'dark') {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      }
+      
+      if (importedData.roundCounter !== undefined) {
+        roundCounter = importedData.roundCounter;
+        srsState.__round = roundCounter;
+        saveState();
+      }
+      
+      // Rebuild and refresh
+      rebuildAllCards();
+      renderCustomVocabList();
+      buildChapterFilter();
+      updateStats();
+      
+      alert('✅ Import erfolgreich!\n\nAlle Daten wurden wiederhergestellt.\nDie App wird jetzt neu geladen.');
+      
+      // Reload to ensure everything is fresh
+      setTimeout(() => location.reload(), 1000);
+      
+    } catch(e) {
+      console.error('Import failed:', e);
+      alert('❌ Import fehlgeschlagen:\n' + e.message + '\n\nBitte überprüfe die Datei.');
+    }
+    
+    // Reset file input
+    event.target.value = '';
+  };
+  
+  reader.readAsText(file);
+}
+
+function confirmReset() {
+  const msg = '⚠️ ACHTUNG: Alles zurücksetzen?\n\n' +
+              'Dies löscht:\n' +
+              '• Deinen gesamten Lernfortschritt\n' +
+              '• Alle eigenen Vokabeln\n' +
+              '• Theme-Einstellung\n\n' +
+              'Diese Aktion kann NICHT rückgängig gemacht werden!\n\n' +
+              'Hast du ein Backup erstellt?';
+  
+  if (!confirm(msg)) return;
+  
+  if (!confirm('Wirklich ALLES löschen? Letzte Chance!')) return;
+  
+  try {
+    localStorage.removeItem('rivstart_srs_v1');
+    localStorage.removeItem('rivstart_custom_vocab');
+    localStorage.removeItem('theme');
+    
+    alert('✅ Alle Daten gelöscht.\n\nDie App wird neu geladen.');
+    
+    setTimeout(() => location.reload(), 500);
+  } catch(e) {
+    alert('❌ Reset fehlgeschlagen:\n' + e.message);
+  }
+}
+
 // ─── THEME TOGGLE ─────────────────────────────────────────────────────────────
 function toggleTheme() {
   document.body.classList.toggle('dark-mode');
@@ -1872,6 +2098,25 @@ restart();
       </form>
       
       <div class="custom-vocab-list" id="customVocabList"></div>
+      
+      <div class="backup-section">
+        <div class="backup-divider">Daten sichern & wiederherstellen</div>
+        <div class="backup-buttons">
+          <button class="backup-btn export-btn" onclick="exportData()">
+            <span class="btn-icon">💾</span>
+            <span class="btn-text">Export</span>
+          </button>
+          <button class="backup-btn import-btn" onclick="document.getElementById('importFile').click()">
+            <span class="btn-icon">📥</span>
+            <span class="btn-text">Import</span>
+          </button>
+          <button class="backup-btn reset-btn" onclick="confirmReset()">
+            <span class="btn-icon">⟳</span>
+            <span class="btn-text">Zurücksetzen</span>
+          </button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+      </div>
     </div>
   </div>
 </div>
