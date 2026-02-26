@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Rivstart A1/A2 – Vokabeltrainer</title>
+<title>Schwedisch A1/A2 – Vokabeltrainer</title>
 
 <!-- iOS Web App Meta Tags -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -859,7 +859,7 @@
 <!-- Password Protection -->
 <div id="passwordScreen" style="display:flex; position:fixed; top:0; left:0; right:0; bottom:0; background:var(--bg); z-index:9999; align-items:center; justify-content:center;">
   <div style="background:var(--card-bg); padding:40px; border-radius:12px; box-shadow:0 4px 20px rgba(0,0,0,0.15); max-width:400px; width:90%;">
-    <h1 style="font-family:'Georgia','Times New Roman',serif; font-size:1.8rem; margin:0 0 8px 0; text-align:center; color:var(--ink);">Rivstart A1/A2</h1>
+    <h1 style="font-family:'Georgia','Times New Roman',serif; font-size:1.8rem; margin:0 0 8px 0; text-align:center; color:var(--ink);">Vokabelkarten Schwedisch A1/A2</h1>
     <p style="font-family:'Menlo','Monaco','Courier New',monospace; font-size:0.7rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--muted); text-align:center; margin:0 0 32px 0;">Vokabeltrainer · Geschützter Bereich</p>
     
     <form id="passwordForm" onsubmit="return checkPassword(event);">
@@ -894,7 +894,7 @@
 <div id="mainApp" style="display:none;">
 <header>
   <div style="display:flex; align-items:baseline; gap:12px; flex:1;">
-    <h1>Rivstart A1/A2</h1>
+    <h1>Vokabelkarten Schwedisch A1/A2</h1>
     <span class="subtitle">Vokabeltrainer · Spaced Repetition</span>
   </div>
   <button class="menu-btn" onclick="openCustomVocab()" title="Eigene Vokabeln verwalten">
@@ -2160,25 +2160,24 @@ restart();
 </div>
 <!-- End of mainApp -->
 
-<!-- Bcrypt Library (minified, ~15KB) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bcryptjs/2.4.3/bcrypt.min.js"></script>
-
 <script>
-// ─── PASSWORD PROTECTION (BCRYPT + RATE LIMITING) ─────────────────────────────
-// WICHTIG: Das Passwort ist als Bcrypt Hash gespeichert - extrem sicher!
+// ─── PASSWORD PROTECTION (SHA-256 + SALT/PEPPER + RATE LIMITING) ──────────────
+// WICHTIG: Das Passwort ist als SHA-256 Hash mit Salt gespeichert
 // 
-// Aktuelles Passwort: "Siehe Passwortmanager"
-// Bcrypt Hash: $2a$10$... (siehe unten)
-//
+// Aktuelles Passwort: "sie passwortmanager"
+// 
 // Um ein neues Passwort zu setzen:
-// 1. Gehe zu: https://bcrypt-generator.com/
-// 2. Gib dein neues Passwort ein
-// 3. Rounds: 10 (Standard, gut für Browser)
-// 4. Kopiere den Bcrypt Hash
-// 5. Ersetze PASSWORD_HASH unten
+// 1. Nutze diese Funktion in der Browser Console:
+//    await generatePasswordHash("deinNeuesPasswort")
+// 2. Kopiere den Output
+// 3. Ersetze PASSWORD_HASH unten
 
-const PASSWORD_HASH = '$2a$12$ZSP9lgjAw/QKtDTKZqXVa.SQ8NbMWMv0lrpjnjPRKTy.PXluXIWR.';
-// ↑ DIESEN HASH ERSETZEN mit deinem Bcrypt Hash
+// Salt und Pepper für zusätzliche Sicherheit
+const SALT = 'rIv5t@rt_S3cur3_S@lt_2026!';
+const PEPPER = 'p3pp3R_f0r_3xtr@_s3cur1ty';
+
+// Das ist der Hash von "rivstart2026" mit Salt und Pepper
+const PASSWORD_HASH = 'af7d129e7b6601682439299581ccb6f67647da1eb731e629d01c8be1594e535b';
 
 // Rate Limiting Konfiguration
 const MAX_ATTEMPTS = 6;           // 6 Fehlversuche erlaubt
@@ -2188,7 +2187,7 @@ const LOCKOUT_INCREASE = 60000;   // +1 Minute pro weitere Sperre
 // Rate Limiting State
 let failedAttempts = 0;
 let lockoutUntil = 0;
-let lockoutCount = 0; // Zählt wie oft bereits gesperrt wurde
+let lockoutCount = 0;
 
 // Lade gespeicherten Lockout-Status
 try {
@@ -2211,6 +2210,28 @@ function saveLockoutState() {
   } catch(e) {
     // SessionStorage nicht verfügbar
   }
+}
+
+// SHA-256 Hash-Funktion mit Salt und Pepper
+async function hashPassword(password) {
+  const saltedPassword = SALT + password + PEPPER;
+  const msgBuffer = new TextEncoder().encode(saltedPassword);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+// Hilfsfunktion zum Generieren neuer Passwort-Hashes
+async function generatePasswordHash(password) {
+  const hash = await hashPassword(password);
+  console.log('='.repeat(60));
+  console.log('Passwort:', password);
+  console.log('Hash:', hash);
+  console.log('='.repeat(60));
+  console.log('Kopiere diesen Hash in die Datei:');
+  console.log(`const PASSWORD_HASH = '${hash}';`);
+  return hash;
 }
 
 function updateLockoutMessage() {
@@ -2264,10 +2285,10 @@ async function checkPassword(event) {
   button.textContent = 'Prüfe...';
   
   try {
-    // Bcrypt-Vergleich (asynchron, dauert ~100ms)
-    const isMatch = await bcrypt.compare(enteredPassword, PASSWORD_HASH);
+    // Hash berechnen und vergleichen
+    const enteredHash = await hashPassword(enteredPassword);
     
-    if (isMatch) {
+    if (enteredHash === PASSWORD_HASH) {
       // ✅ RICHTIGES PASSWORT - Zugriff gewähren
       failedAttempts = 0;
       lockoutUntil = 0;
@@ -2369,7 +2390,7 @@ window.addEventListener('load', function() {
   const originalLog = console.log;
   console.log = function() {
     const args = Array.from(arguments).map(arg => {
-      if (typeof arg === 'string' && (arg.includes(PASSWORD_HASH) || arg.includes('$2a$'))) {
+      if (typeof arg === 'string' && (arg.includes(PASSWORD_HASH) || arg.includes(SALT) || arg.includes(PEPPER))) {
         return '[REDACTED]';
       }
       return arg;
@@ -2377,18 +2398,11 @@ window.addEventListener('load', function() {
     originalLog.apply(console, args);
   };
   
-  // Warnung bei DevTools (optional)
-  let devtoolsOpen = false;
-  const element = new Image();
-  Object.defineProperty(element, 'id', {
-    get: function() {
-      devtoolsOpen = true;
-      console.log('%c⚠️ Achtung!', 'font-size:20px; color:red; font-weight:bold;');
-      console.log('%cDiese App ist passwortgeschützt.', 'font-size:14px;');
-      console.log('%cUnbefugter Zugriff ist nicht gestattet.', 'font-size:14px;');
-    }
-  });
-  console.log(element);
+  // Info beim DevTools öffnen
+  console.log('%c🔐 Rivstart Vokabeltrainer', 'font-size:16px; font-weight:bold; color:#c8471a;');
+  console.log('%cDiese App ist passwortgeschützt.', 'font-size:12px;');
+  console.log('%cUm ein neues Passwort-Hash zu generieren:', 'font-size:12px; margin-top:8px;');
+  console.log('%cgeneratePasswordHash("deinNeuesPasswort")', 'font-size:11px; font-family:monospace; background:#f0f0f0; padding:4px;');
 })();
 </script>
 
