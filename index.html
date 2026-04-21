@@ -18,6 +18,9 @@
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
+  /* Hide everything until we know whether to show login or app */
+  body { visibility: hidden; }
+
   body {
     min-height: 100vh;
     font-family: "Menlo", "Monaco", "Courier New", monospace;
@@ -156,9 +159,168 @@
 <script>
 const PAYLOAD_URL = "./protected-content.json";
 const SESSION_HTML_KEY = "rivstart_unlocked_html_v1";
-const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent";
-const PERSISTENT_EXPIRY_KEY = "rivstart_unlocked_expiry";
+const PERSISTENT_KEY_STORE = "rivstart_key_v1";
 const PERSISTENT_DAYS = 90;
+
+function bytesToB64(bytes) {
+  return btoa(String.fromCharCode(...bytes));
+}
+
+function b64ToBytes(b64) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
+function saveKeyPersistently(rawKeyMaterial) {
+  try {
+    const entry = JSON.stringify({
+      k: bytesToB64(rawKeyMaterial),
+      e: Date.now() + PERSISTENT_DAYS * 86400000
+    });
+    localStorage.setItem(PERSISTENT_KEY_STORE, entry);
+  } catch (e) {
+    // ignore quota or security errors
+  }
+}
+
+function loadStoredKeyMaterial() {
+  try {
+    const raw = localStorage.getItem(PERSISTENT_KEY_STORE);
+    if (!raw) return null;
+    const entry = JSON.parse(raw);
+    if (!entry || Date.now() >= entry.e) {
+      localStorage.removeItem(PERSISTENT_KEY_STORE);
+      return null;
+    }
+    return b64ToBytes(entry.k);
+  } catch (e) {
+    localStorage.removeItem(PERSISTENT_KEY_STORE);
+    return null;
+  }
+}
+
+function renderPage(html) {
+  document.open();
+  document.write(html);
+  document.close();
+}
+
+async function keysFromRawMaterial(rawKeyMaterial) {
+  const aesKeyBytes = rawKeyMaterial.slice(0, 32);
+  const macKeyBytes = rawKeyMaterial.slice(32, 64);
+  const aesKey = await crypto.subtle.importKey("raw", aesKeyBytes, { name: "AES-CBC" }, false, ["decrypt"]);
+  const macKey = await crypto.subtle.importKey("raw", macKeyBytes, { name: "HMAC", hash: "SHA-256" }, false, ["verify"]);
+  return { aesKey, macKey };
+}
+
+async function decryptPayload(payload, keys) {
+  const iv = b64ToBytes(payload.cipher.iv);
+  const encrypted = b64ToBytes(payload.cipher.data);
+  const mac = b64ToBytes(payload.cipher.mac);
+
+  const macInput = new Uint8Array(iv.length + encrypted.length);
+  macInput.set(iv, 0);
+  macInput.set(encrypted, iv.length);
+
+  const macValid = await crypto.subtle.verify("HMAC", keys.macKey, mac, macInput);
+  if (!macValid) throw new Error("MAC invalid");
+
+  const decryptedBuffer = await crypto.subtle.decrypt({ name: "AES-CBC", iv }, keys.aesKey, encrypted);
+  return new TextDecoder().decode(decryptedBuffer);
+}
+
+async function deriveKeyMaterial(password, saltBytes, iterations) {
+  const enc = new TextEncoder();
+  const baseKey = await crypto.subtle.importKey("raw", enc.encode(password), { name: "PBKDF2" }, false, ["deriveBits"]);
+  const keyBits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt: saltBytes, iterations, hash: "SHA-256" },
+    baseKey,
+    512
+  );
+  return new Uint8Array(keyBits);
+}
+
+async function tryAutoUnlock() {
+  const rawKeyMaterial = loadStoredKeyMaterial();
+  if (!rawKeyMaterial) return false;
+
+  try {
+    const cachedHtml = sessionStorage.getItem(SESSION_HTML_KEY);
+    if (cachedHtml) {
+      renderPage(cachedHtml);
+      return true;
+    }
+
+    const response = await fetch(PAYLOAD_URL, { cache: "default" });
+    if (!response.ok) return false;
+    const payload = await response.json();
+
+    const keys = await keysFromRawMaterial(rawKeyMaterial);
+    const html = await decryptPayload(payload, keys);
+
+    try { sessionStorage.setItem(SESSION_HTML_KEY, html); } catch (e) {}
+    renderPage(html);
+    return true;
+  } catch (e) {
+    // Stored key no longer valid (e.g. payload was re-encrypted with new password)
+    localStorage.removeItem(PERSISTENT_KEY_STORE);
+    return false;
+  }
+}
+
+async function unlock(event) {
+  event.preventDefault();
+
+  const form = document.getElementById("unlockForm");
+  const input = document.getElementById("passwordInput");
+  const button = document.getElementById("unlockBtn");
+  const message = document.getElementById("message");
+
+  const password = input.value;
+  if (!password) return;
+
+  button.disabled = true;
+  message.className = "msg ok";
+  message.textContent = "Entschluesselung laeuft...";
+
+  try {
+    const response = await fetch(PAYLOAD_URL, { cache: "no-store" });
+    if (!response.ok) throw new Error("Payload konnte nicht geladen werden.");
+
+    const payload = await response.json();
+    const salt = b64ToBytes(payload.kdf.salt);
+
+    const rawKeyMaterial = await deriveKeyMaterial(password, salt, payload.kdf.iterations);
+    const keys = await keysFromRawMaterial(rawKeyMaterial);
+    const html = await decryptPayload(payload, keys);
+
+    saveKeyPersistently(rawKeyMaterial);
+    try { sessionStorage.setItem(SESSION_HTML_KEY, html); } catch (e) {}
+    renderPage(html);
+  } catch (error) {
+    message.className = "msg error";
+    message.textContent = "Passwort falsch oder Daten ungueltig.";
+    input.focus();
+    form.reset();
+    button.disabled = false;
+  }
+}
+
+document.getElementById("unlockForm").addEventListener("submit", unlock);
+
+tryAutoUnlock().then(function(unlocked) {
+  if (!unlocked) {
+    document.body.style.visibility = "visible";
+    document.getElementById("passwordInput").focus();
+  }
+});
+</script>
+</body>
+</html>
 
 function saveSessionPersistently(html) {
   try {
@@ -342,6 +504,7 @@ const restoredHtml = restoreFromSession();
 if (restoredHtml) {
   renderPage(restoredHtml);
 } else {
+  document.body.style.visibility = "visible";
   document.getElementById("passwordInput").focus();
 }
 
