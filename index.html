@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Geschuetzter Zugriff - Vokabeltrainer</title>
 <style>
   :root {
@@ -19,7 +19,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    min-height: 100svh;
+    min-height: 100vh;
     font-family: "Menlo", "Monaco", "Courier New", monospace;
     color: var(--ink);
     background:
@@ -29,23 +29,17 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding:
-      max(12px, env(safe-area-inset-top))
-      max(12px, env(safe-area-inset-right))
-      max(12px, env(safe-area-inset-bottom))
-      max(12px, env(safe-area-inset-left));
+    padding: 24px;
   }
 
   .card {
     width: 100%;
     max-width: 520px;
-    max-height: calc(100svh - 24px);
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 28px;
     box-shadow: 0 12px 30px rgba(26, 18, 8, 0.12);
-    overflow: auto;
   }
 
   h1 {
@@ -141,26 +135,6 @@
     font-size: 0.7rem;
     line-height: 1.5;
   }
-
-  @media (max-width: 390px), (max-height: 740px) {
-    .card {
-      padding: 20px;
-      border-radius: 12px;
-      max-height: calc(100svh - 16px);
-    }
-
-    h1 {
-      font-size: 1.6rem;
-    }
-
-    .subtitle {
-      margin-bottom: 14px;
-    }
-
-    form {
-      gap: 10px;
-    }
-  }
 </style>
 </head>
 <body>
@@ -182,34 +156,61 @@
 <script>
 const PAYLOAD_URL = "./protected-content.json";
 const SESSION_HTML_KEY = "rivstart_unlocked_html_v1";
-const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent_v1";
+const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent";
+const PERSISTENT_EXPIRY_KEY = "rivstart_unlocked_expiry";
+const PERSISTENT_DAYS = 90;
 
-function renderUnlockedHtml(html) {
-  document.open();
-  document.write(html);
-  document.close();
+function saveSessionPersistently(html) {
+  try {
+    const expiryTime = Date.now() + (PERSISTENT_DAYS * 24 * 60 * 60 * 1000);
+    localStorage.setItem(PERSISTENT_HTML_KEY, html);
+    localStorage.setItem(PERSISTENT_EXPIRY_KEY, expiryTime.toString());
+  } catch (error) {
+    // Storage full, continue without persistent storage
+  }
 }
 
-function restoreFromCache() {
+function restoreFromSession() {
   try {
+    // First try sessionStorage (current session only)
     const cachedHtml = sessionStorage.getItem(SESSION_HTML_KEY);
     if (cachedHtml) {
-      renderUnlockedHtml(cachedHtml);
-      return true;
+      return cachedHtml;
     }
 
+    // Then try localStorage (persistent across days)
     const persistentHtml = localStorage.getItem(PERSISTENT_HTML_KEY);
-    if (persistentHtml) {
-      // Also restore into session cache for faster reloads in this tab.
-      sessionStorage.setItem(SESSION_HTML_KEY, persistentHtml);
-      renderUnlockedHtml(persistentHtml);
-      return true;
+    const expiryTime = parseInt(localStorage.getItem(PERSISTENT_EXPIRY_KEY) || "0", 10);
+    
+    if (persistentHtml && Date.now() < expiryTime) {
+      // Valid persistent session found, restore and also save to sessionStorage for this session
+      try {
+        sessionStorage.setItem(SESSION_HTML_KEY, persistentHtml);
+      } catch (e) {
+        // ignore
+      }
+      return persistentHtml;
+    } else {
+      // Expired, clear persistent storage
+      localStorage.removeItem(PERSISTENT_HTML_KEY);
+      localStorage.removeItem(PERSISTENT_EXPIRY_KEY);
     }
-  } catch (error) {
-    // Ignore storage access issues and show login screen.
-  }
 
-  return false;
+    return null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function renderPage(html) {
+  try {
+    document.open();
+    document.write(html);
+    document.close();
+    return true;
+  } catch (error) {
+    return false;
+  }
 }
 
 function b64ToBytes(b64) {
@@ -321,12 +322,12 @@ async function unlock(event) {
 
     try {
       sessionStorage.setItem(SESSION_HTML_KEY, html);
-      localStorage.setItem(PERSISTENT_HTML_KEY, html);
     } catch (error) {
-      // Ignore storage failures and continue with direct render.
+      // ignore
     }
-
-    renderUnlockedHtml(html);
+    
+    saveSessionPersistently(html);
+    renderPage(html);
   } catch (error) {
     message.className = "msg error";
     message.textContent = "Passwort falsch oder Daten ungueltig.";
@@ -337,7 +338,10 @@ async function unlock(event) {
   }
 }
 
-if (!restoreFromCache()) {
+const restoredHtml = restoreFromSession();
+if (restoredHtml) {
+  renderPage(restoredHtml);
+} else {
   document.getElementById("passwordInput").focus();
 }
 
