@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Geschuetzter Zugriff - Vokabeltrainer</title>
 <style>
   :root {
@@ -19,7 +19,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    min-height: 100vh;
+    min-height: 100svh;
     font-family: "Menlo", "Monaco", "Courier New", monospace;
     color: var(--ink);
     background:
@@ -29,17 +29,23 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 24px;
+    padding:
+      max(12px, env(safe-area-inset-top))
+      max(12px, env(safe-area-inset-right))
+      max(12px, env(safe-area-inset-bottom))
+      max(12px, env(safe-area-inset-left));
   }
 
   .card {
     width: 100%;
     max-width: 520px;
+    max-height: calc(100svh - 24px);
     background: var(--card-bg);
     border: 1px solid var(--border);
     border-radius: 14px;
     padding: 28px;
     box-shadow: 0 12px 30px rgba(26, 18, 8, 0.12);
+    overflow: auto;
   }
 
   h1 {
@@ -135,6 +141,26 @@
     font-size: 0.7rem;
     line-height: 1.5;
   }
+
+  @media (max-width: 390px), (max-height: 740px) {
+    .card {
+      padding: 20px;
+      border-radius: 12px;
+      max-height: calc(100svh - 16px);
+    }
+
+    h1 {
+      font-size: 1.6rem;
+    }
+
+    .subtitle {
+      margin-bottom: 14px;
+    }
+
+    form {
+      gap: 10px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -156,21 +182,34 @@
 <script>
 const PAYLOAD_URL = "./protected-content.json";
 const SESSION_HTML_KEY = "rivstart_unlocked_html_v1";
+const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent_v1";
 
-function restoreFromSession() {
+function renderUnlockedHtml(html) {
+  document.open();
+  document.write(html);
+  document.close();
+}
+
+function restoreFromCache() {
   try {
     const cachedHtml = sessionStorage.getItem(SESSION_HTML_KEY);
-    if (!cachedHtml) {
-      return false;
+    if (cachedHtml) {
+      renderUnlockedHtml(cachedHtml);
+      return true;
     }
 
-    document.open();
-    document.write(cachedHtml);
-    document.close();
-    return true;
+    const persistentHtml = localStorage.getItem(PERSISTENT_HTML_KEY);
+    if (persistentHtml) {
+      // Also restore into session cache for faster reloads in this tab.
+      sessionStorage.setItem(SESSION_HTML_KEY, persistentHtml);
+      renderUnlockedHtml(persistentHtml);
+      return true;
+    }
   } catch (error) {
-    return false;
+    // Ignore storage access issues and show login screen.
   }
+
+  return false;
 }
 
 function b64ToBytes(b64) {
@@ -282,13 +321,12 @@ async function unlock(event) {
 
     try {
       sessionStorage.setItem(SESSION_HTML_KEY, html);
+      localStorage.setItem(PERSISTENT_HTML_KEY, html);
     } catch (error) {
       // Ignore storage failures and continue with direct render.
     }
 
-    document.open();
-    document.write(html);
-    document.close();
+    renderUnlockedHtml(html);
   } catch (error) {
     message.className = "msg error";
     message.textContent = "Passwort falsch oder Daten ungueltig.";
@@ -299,7 +337,7 @@ async function unlock(event) {
   }
 }
 
-if (!restoreFromSession()) {
+if (!restoreFromCache()) {
   document.getElementById("passwordInput").focus();
 }
 
