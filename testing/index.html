@@ -30,7 +30,6 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    visibility: hidden;
   }
 
   .card {
@@ -158,11 +157,10 @@
 const PAYLOAD_URL = "./protected-content.json";
 const SESSION_HTML_KEY = "rivstart_unlocked_html_v1";
 const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent_v1";
-const PERSISTENT_SALT_KEY = "rivstart_payload_salt_v1";
 
 async function restoreFromSession() {
   try {
-    // Try session storage first (no stale-check needed, lives only for current session)
+    // Try session storage first (lives only for current session)
     const sessionHtml = sessionStorage.getItem(SESSION_HTML_KEY);
     if (sessionHtml) {
       document.open();
@@ -171,32 +169,13 @@ async function restoreFromSession() {
       return true;
     }
 
-    // For persistent cache: verify payload salt matches what was cached when possible
+    // Fall back to persistent cache for browser restarts
     const cachedHtml = localStorage.getItem(PERSISTENT_HTML_KEY);
-    const cachedSalt = localStorage.getItem(PERSISTENT_SALT_KEY);
     if (!cachedHtml) {
       return false;
     }
 
-    // If we have a cached salt, try to validate freshness.
-    // If validation is not possible (network/file quirks), prefer seamless restore.
-    if (cachedSalt) {
-      try {
-        const resp = await fetch(PAYLOAD_URL, { cache: "no-store" });
-        if (resp.ok) {
-          const payload = await resp.json();
-          if (payload.kdf.salt !== cachedSalt) {
-            localStorage.removeItem(PERSISTENT_HTML_KEY);
-            localStorage.removeItem(PERSISTENT_SALT_KEY);
-            return false;
-          }
-        }
-      } catch (error) {
-        // Keep cached restore path to avoid recurrent password prompts.
-      }
-    }
-
-    // Salt matches: cache is fresh, restore silently
+    // Restore persistent cache silently
     sessionStorage.setItem(SESSION_HTML_KEY, cachedHtml);
     document.open();
     document.write(cachedHtml);
@@ -317,9 +296,8 @@ async function unlock(event) {
     try {
       // Store in session storage for current session
       sessionStorage.setItem(SESSION_HTML_KEY, html);
-      // Persist across browser restarts, together with salt fingerprint
+      // Persist across browser restarts
       localStorage.setItem(PERSISTENT_HTML_KEY, html);
-      localStorage.setItem(PERSISTENT_SALT_KEY, payload.kdf.salt);
     } catch (error) {
       // Ignore storage failures and continue with direct render.
     }
@@ -339,7 +317,6 @@ async function unlock(event) {
 
 restoreFromSession().then(restored => {
   if (!restored) {
-    document.body.style.visibility = "visible";
     document.getElementById("passwordInput").focus();
   }
 });
