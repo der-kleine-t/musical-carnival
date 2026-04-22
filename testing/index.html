@@ -30,6 +30,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
+    visibility: hidden;
   }
 
   .card {
@@ -170,29 +171,29 @@ async function restoreFromSession() {
       return true;
     }
 
-    // For persistent cache: verify payload salt matches what was cached
+    // For persistent cache: verify payload salt matches what was cached when possible
     const cachedHtml = localStorage.getItem(PERSISTENT_HTML_KEY);
     const cachedSalt = localStorage.getItem(PERSISTENT_SALT_KEY);
-    if (!cachedHtml || !cachedSalt) {
+    if (!cachedHtml) {
       return false;
     }
 
-    // Fetch current payload to compare salt (detects re-encryption)
-    let currentSalt;
-    try {
-      const resp = await fetch(PAYLOAD_URL, { cache: "no-store" });
-      if (!resp.ok) return false;
-      const payload = await resp.json();
-      currentSalt = payload.kdf.salt;
-    } catch {
-      return false;
-    }
-
-    if (currentSalt !== cachedSalt) {
-      // Payload was re-encrypted — invalidate stale cache and show login
-      localStorage.removeItem(PERSISTENT_HTML_KEY);
-      localStorage.removeItem(PERSISTENT_SALT_KEY);
-      return false;
+    // If we have a cached salt, try to validate freshness.
+    // If validation is not possible (network/file quirks), prefer seamless restore.
+    if (cachedSalt) {
+      try {
+        const resp = await fetch(PAYLOAD_URL, { cache: "no-store" });
+        if (resp.ok) {
+          const payload = await resp.json();
+          if (payload.kdf.salt !== cachedSalt) {
+            localStorage.removeItem(PERSISTENT_HTML_KEY);
+            localStorage.removeItem(PERSISTENT_SALT_KEY);
+            return false;
+          }
+        }
+      } catch (error) {
+        // Keep cached restore path to avoid recurrent password prompts.
+      }
     }
 
     // Salt matches: cache is fresh, restore silently
@@ -338,6 +339,7 @@ async function unlock(event) {
 
 restoreFromSession().then(restored => {
   if (!restored) {
+    document.body.style.visibility = "visible";
     document.getElementById("passwordInput").focus();
   }
 });
