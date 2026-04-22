@@ -140,7 +140,6 @@
 <body>
   <main class="card">
     <h1>Vokabeltrainer A1/A2</h1>
-    <p class="subtitle">Geschuetzter Bereich</p>
     <p class="info"></p>
 
     <form id="unlockForm">
@@ -156,14 +155,27 @@
 <script>
 const PAYLOAD_URL = "./protected-content.json";
 const SESSION_HTML_KEY = "rivstart_unlocked_html_v1";
+const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent_v1";
 
-function restoreFromSession() {
+async function restoreFromSession() {
   try {
-    const cachedHtml = sessionStorage.getItem(SESSION_HTML_KEY);
+    // Try session storage first (lives only for current session)
+    const sessionHtml = sessionStorage.getItem(SESSION_HTML_KEY);
+    if (sessionHtml) {
+      document.open();
+      document.write(sessionHtml);
+      document.close();
+      return true;
+    }
+
+    // Fall back to persistent cache for browser restarts
+    const cachedHtml = localStorage.getItem(PERSISTENT_HTML_KEY);
     if (!cachedHtml) {
       return false;
     }
 
+    // Restore persistent cache silently
+    sessionStorage.setItem(SESSION_HTML_KEY, cachedHtml);
     document.open();
     document.write(cachedHtml);
     document.close();
@@ -281,7 +293,10 @@ async function unlock(event) {
     const html = new TextDecoder().decode(decryptedBuffer);
 
     try {
+      // Store in session storage for current session
       sessionStorage.setItem(SESSION_HTML_KEY, html);
+      // Persist across browser restarts
+      localStorage.setItem(PERSISTENT_HTML_KEY, html);
     } catch (error) {
       // Ignore storage failures and continue with direct render.
     }
@@ -299,9 +314,11 @@ async function unlock(event) {
   }
 }
 
-if (!restoreFromSession()) {
-  document.getElementById("passwordInput").focus();
-}
+restoreFromSession().then(restored => {
+  if (!restored) {
+    document.getElementById("passwordInput").focus();
+  }
+});
 
 document.getElementById("unlockForm").addEventListener("submit", unlock);
 </script>
