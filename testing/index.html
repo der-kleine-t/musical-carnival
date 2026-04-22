@@ -136,11 +136,27 @@
     line-height: 1.5;
   }
 </style>
+<script>
+  (function bootstrapCachedContent() {
+    try {
+      const sessionKey = "rivstart_unlocked_html_v1";
+      const persistentKey = "rivstart_unlocked_html_persistent_v1";
+      const cachedHtml = sessionStorage.getItem(sessionKey) || localStorage.getItem(persistentKey);
+
+      if (cachedHtml) {
+        document.open();
+        document.write(cachedHtml);
+        document.close();
+      }
+    } catch (error) {
+      // Fallback to normal login flow.
+    }
+  }());
+</script>
 </head>
 <body>
   <main class="card">
     <h1>Vokabeltrainer A1/A2</h1>
-    <p class="subtitle">Geschuetzter Bereich</p>
     <p class="info"></p>
 
     <form id="unlockForm">
