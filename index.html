@@ -138,6 +138,29 @@
 </style>
 </head>
 <body>
+<script>
+  // Synchronous restore — runs before any HTML is painted.
+  // If a valid cache exists, the entire document is replaced here and
+  // the login form below never renders.
+  (function () {
+    try {
+      var SESSION_KEY    = "rivstart_unlocked_html_v1";
+      var PERSISTENT_KEY = "rivstart_unlocked_html_persistent_v1";
+      var html = sessionStorage.getItem(SESSION_KEY) || localStorage.getItem(PERSISTENT_KEY);
+      if (html) {
+        // Copy to sessionStorage so subsequent same-session reloads skip localStorage lookup.
+        if (!sessionStorage.getItem(SESSION_KEY)) {
+          try { sessionStorage.setItem(SESSION_KEY, html); } catch (e) {}
+        }
+        document.open();
+        document.write(html);
+        document.close();
+      }
+    } catch (e) {
+      // Any error → fall through to normal login flow.
+    }
+  }());
+</script>
   <main class="card">
     <h1>Vokabeltrainer A1/A2</h1>
     <p class="info"></p>
@@ -156,34 +179,6 @@
 const PAYLOAD_URL = "./protected-content.json";
 const SESSION_HTML_KEY = "rivstart_unlocked_html_v1";
 const PERSISTENT_HTML_KEY = "rivstart_unlocked_html_persistent_v1";
-
-async function restoreFromSession() {
-  try {
-    // Try session storage first (lives only for current session)
-    const sessionHtml = sessionStorage.getItem(SESSION_HTML_KEY);
-    if (sessionHtml) {
-      document.open();
-      document.write(sessionHtml);
-      document.close();
-      return true;
-    }
-
-    // Fall back to persistent cache for browser restarts
-    const cachedHtml = localStorage.getItem(PERSISTENT_HTML_KEY);
-    if (!cachedHtml) {
-      return false;
-    }
-
-    // Restore persistent cache silently
-    sessionStorage.setItem(SESSION_HTML_KEY, cachedHtml);
-    document.open();
-    document.write(cachedHtml);
-    document.close();
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
 
 function b64ToBytes(b64) {
   const binary = atob(b64);
@@ -314,12 +309,7 @@ async function unlock(event) {
   }
 }
 
-restoreFromSession().then(restored => {
-  if (!restored) {
-    document.getElementById("passwordInput").focus();
-  }
-});
-
+document.getElementById("passwordInput").focus();
 document.getElementById("unlockForm").addEventListener("submit", unlock);
 </script>
 </body>
